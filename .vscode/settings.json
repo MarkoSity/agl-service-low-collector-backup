@@ -1,0 +1,46 @@
+{
+    "files.associations": {
+        "*.bb": "bat",
+        "*.inc": "bat",
+        "*.bbclass": "bat",
+        "*.rules": "shellscript",
+        "Jenkinsfile": "declarative",
+        "collector-binding.h": "c",
+        "istream": "c",
+        "capability.h": "c",
+        "common.h": "c",
+        "plugin.h": "c",
+        "collectd.h": "c",
+        "nfc.h": "c",
+        "*.tcc": "c",
+        "low-collector.h": "c",
+        "stat.h": "c",
+        "oconfig.h": "c",
+        "testing.h": "c",
+        "time.h": "c",
+        "utils_time.h": "c",
+        "meta_data.h": "c",
+        "utils_cache.h": "c",
+        "config.h": "c",
+        "inet.h": "c",
+        "i2c-dev.h": "c",
+        "utils_subst.h": "c",
+        "json.h": "c",
+        "heap.h": "c",
+        "avltree.h": "c",
+        "lcc_features.h": "c",
+        "client.h": "c",
+        "dlfcn.h": "c",
+        "file.h": "c",
+        "stdio.h": "c",
+        "init.h": "c",
+        "read.h": "c",
+        "basis.h": "c",
+        "type_traits": "c"
+    },
+    "C_Cpp.intelliSenseEngineFallback": "Disabled",
+
+    "cSpell.words": [
+        "libcolld", "libcollectd"
+    ]
+}
