@@ -27,7 +27,12 @@
 #define PLUGIN_PATH "../build/src/collectd/./plugin.so"
 
 plugin_t **Plugin;
+plugin_init_t Plugin_init;
+plugin_deinit_t Plugin_deinit;
+
 metrics_t **Metrics;
+metrics_init_t Metrics_init;
+metrics_deinit_t Metrics_deinit;
 
 static void config(afb_req_t request)
 {
@@ -37,7 +42,8 @@ static void config(afb_req_t request)
 
     /* Initialize handle to make a link with the dynamic cpu library */
     void *handle_cpu = NULL;
-    if( (handle_cpu = dlopen(CPU_PATH, RTLD_NOW | RTLD_GLOBAL)) == NULL)
+    handle_cpu = dlopen(CPU_PATH, RTLD_NOW | RTLD_GLOBAL);
+    if(!handle_cpu)
     {
         AFB_API_ERROR(api, "dlerror dlopen cpu %s", dlerror());
         afb_req_fail(request, NULL, "dlerror dlopen cpu");
@@ -46,7 +52,8 @@ static void config(afb_req_t request)
 
     /* We want to get the module register function relative to the cpu library */
     module_register_t module_register;
-    if( (module_register = (module_register_t) dlsym(handle_cpu, "module_register")) == NULL)
+    module_register = (module_register_t) dlsym(handle_cpu, "module_register");
+    if(!module_register)
     {
         AFB_API_ERROR(api, "dlerror module register : %s", dlerror());
         afb_req_fail(request, NULL, "dlerror module register");
@@ -58,13 +65,13 @@ static void config(afb_req_t request)
     /* Call the module_register function to fill the plugin variable with the cpu callbacks */
     (*module_register)();
 
-    if((*Plugin)->init == NULL)
+    if(!(*Plugin)->init)
     {
         afb_req_fail(request, NULL, "Initialization callback NULL");
         return;
     }
 
-    if((*Plugin)->config == NULL)
+    if(!(*Plugin)->config)
     {
         afb_req_fail(request, NULL, "Configuration callback NULL");
         return;
@@ -78,7 +85,7 @@ static void simpleRead(afb_req_t request)
 {
     afb_api_t api;
     api = afb_req_get_api(request);
-    if((*Plugin)->read == NULL)
+    if(!(*Plugin)->read)
     {
         afb_req_fail(request, NULL, "Read callbacks NULL");
         return;
@@ -94,7 +101,7 @@ static void simpleRead(afb_req_t request)
 
     (*(*Plugin)->read)(NULL);
 
-    if(*Metrics != NULL)
+    if(*Metrics)
     {
         AFB_API_NOTICE(api, "Metrics loaded");
         printf("Number of metrics : %ld\n", (*Metrics)->size);
@@ -115,42 +122,66 @@ static void simpleRead(afb_req_t request)
         } */
 
         afb_req_success(request, NULL, "Plugin succesfully read");
-    return;
+        (*Metrics_deinit)();
     }
     else
     {
         AFB_API_NOTICE(api, "Metrics failed to load");
         afb_req_fail(request, NULL, "Fails to read the plugin");
-        return;
     }
+    return;
 }
 
 // Binder initialization function
 static int initialization(afb_api_t api)
 {
     void *handle_plugin;
-    plugin_init_t plugin_init;
-    /* metrics_init_t metrics_init; */
     AFB_API_NOTICE(api, "Initialization");
 
     /* Load the plugin library */
     handle_plugin = dlopen(PLUGIN_PATH, RTLD_NOW | RTLD_GLOBAL);
-    if( handle_plugin == NULL)
+    if(!handle_plugin)
     {
         AFB_API_ERROR(api, "dlerror dlopen plugin %s", dlerror());
         return -1;
     }
+    AFB_API_NOTICE(api, "Plugin library open");
 
-    /* Load the plugin variable initialization */
-    plugin_init = (plugin_init_t)dlsym(handle_plugin, "plugin_init");
-    if( plugin_init == NULL)
+    /* Link our global functions to the one in the plugin library */
+    Plugin_init = (plugin_init_t)dlsym(handle_plugin, "plugin_init");
+    if(!Plugin_init)
     {
         AFB_API_ERROR(api, "dlerror init plugin symbol : %s", dlerror());
         return -1;
     }
+    AFB_API_NOTICE(api, "Plugin init load");
+
+    Plugin_deinit = (plugin_deinit_t)dlsym(handle_plugin, "plugin_deinit");
+    if(!Plugin_deinit)
+    {
+        AFB_API_ERROR(api, "dlerror deinit plugin symbol : %s", dlerror());
+        return -1;
+    }
+    AFB_API_NOTICE(api, "Plugin deinit load");
+
+    Metrics_init = (metrics_init_t)dlsym(handle_plugin, "metrics_init");
+    if(!Metrics_init)
+    {
+        AFB_API_ERROR(api, "dlerror init metrics symbol : %s", dlerror());
+        return -1;
+    }
+    AFB_API_NOTICE(api, "Metrics init load");
+
+    Metrics_deinit = (metrics_deinit_t)dlsym(handle_plugin, "metrics_deinit");
+    if(!Metrics_deinit)
+    {
+        AFB_API_ERROR(api, "dlerror deinit metrics symbol : %s", dlerror());
+        return -1;
+    }
+    AFB_API_NOTICE(api, "Metrics deinit load");
 
     /* If the initialization fails */
-    if( (*plugin_init)() )
+    if( (*Plugin_init)() )
     {
         AFB_API_ERROR(api, "dlerror plugin initialization fail");
         return -1;
@@ -158,7 +189,7 @@ static int initialization(afb_api_t api)
 
     /* Load the plugin variable */
     Plugin = (plugin_t**) dlsym(handle_plugin, "Plugin_collectd");
-    if( Plugin == NULL)
+    if(!Plugin)
     {
         AFB_API_ERROR(api, "dlerror Plugin : %s", dlerror());
         return -1;
@@ -166,7 +197,7 @@ static int initialization(afb_api_t api)
 
     /* Load the metrics variable */
     Metrics = (metrics_t**) dlsym(handle_plugin, "Metrics_collectd");
-    if( Metrics == NULL)
+    if(!Metrics)
     {
         AFB_API_ERROR(api, "dlerror Plugin : %s", dlerror());
         return -1;

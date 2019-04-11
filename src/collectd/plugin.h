@@ -209,7 +209,7 @@ typedef int (*plugin_init_t)(void);
 typedef int (*plugin_deinit_t)(void);
 
 typedef int (*metrics_init_t)(void);
-typedef int (*metrics_deinit_t)(void);
+typedef void (*metrics_deinit_t)(void);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Plugin Functions
@@ -222,13 +222,13 @@ int plugin_init(void);
 int plugin_deinit(void);
 
 /* METRICS INIT */
-int metrics_init(void);
+int metrics_init(value_list_t list);
 
 /* METRICS ADD */
 int metrics_add(value_list_t list);
 
 /* METRICS DEINIT */
-int metrics_deinit(void);
+void metrics_deinit(void);
 
 /* INITIALIZATION */
 int plugin_register_init(const char *name, int (*callback)(void));

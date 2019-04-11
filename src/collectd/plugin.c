@@ -29,7 +29,7 @@ metrics_t *Metrics_collectd;
 int plugin_init(void)
 {
     Plugin_collectd = (plugin_t*)malloc(sizeof(plugin_t));
-    if(Plugin_collectd == NULL)
+    if(!Plugin_collectd)
     {
         return -1;
     }
@@ -41,7 +41,7 @@ int plugin_init(void)
 int plugin_deinit(void)
 {
     free(Plugin_collectd);
-    if(Plugin_collectd != NULL)
+    if(Plugin_collectd)
     {
         return -1;
     }
@@ -49,73 +49,127 @@ int plugin_deinit(void)
 }
 
 /* Metrics INIT */
-int metrics_init(void)
+int metrics_init(value_list_t list)
 {
     Metrics_collectd = (metrics_t*)malloc(sizeof(metrics_t));
     Metrics_collectd->metrics = (value_list_t*)malloc(sizeof(value_list_t));
     Metrics_collectd->metrics->values = (value_t*)malloc(sizeof(value_t));
-    if(Metrics_collectd == NULL)
+    if(!Metrics_collectd || !Metrics_collectd->metrics || !Metrics_collectd->metrics->values)
     {
+        printf("metrics_init : Metrics malloc failed \n");
         return -1;
     }
+    Metrics_collectd->metrics[0] = list;
+    Metrics_collectd->size = 1;
     printf("Metrics initialized\n");
     return 0;
 }
 
 int metrics_add(value_list_t list)
 {
-    /* Trivial case, the metrics list is empty */
-    if(Metrics_collectd == NULL)
-    {
-        if(metrics_init())
-        {
-            return -1;
-        }
-        else
-        {
-            Metrics_collectd->size = 1;
-            Metrics_collectd->metrics[0] = list;
-            printf("Metrics_add : Metrics_collectd[0] %lf\n", Metrics_collectd[0].metrics->values->gauge);
-            printf("Metrics size : %ld\n", Metrics_collectd->size);
 
-            return 0;
-        }
+    /* Trivial case, the metrics list is empty */
+    if(!Metrics_collectd)
+    {
+        metrics_init(list);
+
+        printf("Value to add : %lf\n", list.values->gauge);
+        printf("Metrics_add : %lf\n", Metrics_collectd->metrics[Metrics_collectd->size - 1].values->gauge);
+        printf("Metrics size : %ld\n", Metrics_collectd->size);
+        return 0;
     }
 
     /* Here we have to add at the end of the table the argument list */
     else
     {
-        Metrics_collectd->size ++;
-        value_list_t *tmp;
-        tmp = (value_list_t*)realloc(Metrics_collectd->metrics, Metrics_collectd->size*sizeof(value_list_t));
-        tmp[Metrics_collectd->size - 1].values = (value_t*)malloc(sizeof(value_t));
-        if(tmp == NULL)
+        metrics_t *tmp;
+        tmp = (metrics_t*)malloc(sizeof(metrics_t));
+
+        /* Increase the metrics table size and realloc an other space in the table to store an other metric*/
+        tmp->size = Metrics_collectd->size;
+        printf("value to add : %lf\n", list.values->gauge);
+        printf("tmp size : %ld\n\n", tmp->size);
+
+        tmp->metrics = (value_list_t*)realloc(Metrics_collectd->metrics, (tmp->size + 1)*sizeof(value_list_t));
+
+        /* If the malloc failed the process is stopped*/
+        if(!tmp->metrics)
         {
-            printf("Realloc failed\n");
+            printf("Malloc Metrics failed\n");
             return -1;
         }
-        Metrics_collectd->metrics = tmp;
-        Metrics_collectd->metrics[Metrics_collectd->size - 1] = list;
-        Metrics_collectd->metrics[Metrics_collectd->size - 1].values = list.values;
-        printf("Reference values : \n\t");
-        printf("counter : %ld\n\t", list.values->counter);
-        printf("gauge : %lf\n\t", list.values->gauge);
-        printf("absolute : %ld\n\t", list.values->absolute);
-        printf("derive : %ld\n\n", list.values->derive);
+
+        /* In the new allocated space, we malloc an other memory field to store the values */
+        tmp->metrics[tmp->size].values = (value_t*)malloc(sizeof(value_t));
+
+        /* If the malloc failed the process is stopped*/
+        if(!tmp->metrics[tmp->size].values)
+        {
+            printf("Malloc value failed\n");
+            return -1;
+        }
+
+        /* Copy the previous Metrics content */
+        for(int i = 0 ; i != tmp->size - 1 ; i++)
+        {
+            tmp->metrics[i] = Metrics_collectd->metrics[i];
+        }
+
+        /* Copy the new value in the tampon */
+        tmp->metrics[tmp->size] = list;
+        tmp->size ++;
+        Metrics_collectd = tmp;
+
+        printf("Metrics content : \n\t");
+        for(int i = 0 ; i != Metrics_collectd->size ; i ++)
+        {
+            printf("%d Metrics value : %lf\n\t", i, Metrics_collectd->metrics[i].values->gauge);
+        }
+        printf("\n");
+/* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
+
+        /* Metrics_collectd->metrics = (value_list_t*)realloc(Metrics_collectd->metrics, Metrics_collectd->size*sizeof(value_list_t)); */
+
+        /* If the realloc fails we stop the process */
+        /* if(Metrics_collectd->metrics == NULL)
+        {
+            printf("Realloc Metrics failed\n");
+            return -1;
+        } */
+
+        /* In the new allocated space, we malloc an other memory field to store the values */
+        /* Metrics_collectd->metrics[Metrics_collectd->size - 1].values = (value_t*)malloc(sizeof(value_t)); */
+
+        /* If the malloc fails, we stop the process*/
+        /* if(Metrics_collectd->metrics[Metrics_collectd->size - 1].values == NULL)
+        {
+            printf("Malloc values failed\n");
+            return -1;
+        } */
+
+        /* Copy the argument content in the new allocated space */
+        /* Metrics_collectd->metrics[Metrics_collectd->size - 1] = list; */
+
+        /* Copy the argument values in the allocated space */
+        /* Metrics_collectd->metrics[Metrics_collectd->size - 1].values = list.values; */
+
+        /* printf("Reference values : %lf\n\n", list.values->gauge);
+
+        for(int i = 0 ; i != Metrics_collectd->size ; i ++)
+        {
+            printf("Values stored : %d %lf\n", i, Metrics_collectd->metrics[i].values->gauge);
+        }
+        printf("\n"); */
         return 0;
     }
 
 }
 
 /* Metrics DEINIT */
-int metrics_deinit(void)
+void metrics_deinit(void)
 {
-    free(Metrics_collectd);
-    if(Metrics_collectd != NULL)
-    {
-        return -1;
-    }
-    return 0;
+    Metrics_collectd->size = 0;
+    Metrics_collectd->metrics = NULL;
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -161,20 +215,6 @@ int plugin_dispatch_values(value_list_t *vl)
         return -1;
     }
 
-    /* *Metrics_collectd = *vl; */
-
-    /* printf("Value counter : %ld\n", vl->values->counter);
-    printf("Value gauge : %f\n", vl->values->gauge);
-    printf("Value absolute : %ld\n", vl->values->absolute);
-    printf("Value derive : %ld\n", vl->values->derive);
-    printf("size : %ld\n", vl->values_len);
-    printf("time : %ld\n", vl->time);
-    printf("Interval : %ld\n", vl->interval);
-    printf("Host : %s\n", vl->host);
-    printf("Plugin : %s\n", vl->plugin);
-    printf("Plugin instance : %s\n", vl->plugin_instance);
-    printf("Type : %s\n", vl->type);
-    printf("Type instance : %s\n\n", vl->type_instance); */
     return 0;
 }
 
