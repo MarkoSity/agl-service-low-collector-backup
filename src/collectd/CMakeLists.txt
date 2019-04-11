@@ -14,24 +14,31 @@
 # limitations under the License.
 ###########################################################################
 
-# Add target to project dependency list
-PROJECT_TARGET_ADD(lowCollector)
-
-    set(SRC_LOWCOLLECTOR
-    "lowCollector.c"
-	)
-
-	set(SRC_PLUGIN
-    "../collectd/plugin.c"
+PROJECT_TARGET_ADD(cpu)
+    set(SRC_CPU
+		"cpu.c"
     )
 
-	# Define project Targets
-	ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_LOWCOLLECTOR})
-                                      #${SRC_PLUGIN})
+    ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_CPU})
 
-	# Binder exposes a unique public entry point
-	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-	    PREFIX "afb-"
-		LABELS "BINDING"
-		OUTPUT_NAME ${TARGET_NAME}
-	)
+  SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
+        LABELS "PLUGIN"
+        PREFIX ""
+        SUFFIX ".so"
+        OUTPUT_NAME ${TARGET_NAME}
+    )
+
+PROJECT_TARGET_ADD(plugin)
+
+    set(SRC_PLUGIN
+		"plugin.c"
+    )
+
+    ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_PLUGIN})
+
+  SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
+        LABELS "PLUGIN"
+        PREFIX ""
+        SUFFIX ".so"
+        OUTPUT_NAME ${TARGET_NAME}
+    )

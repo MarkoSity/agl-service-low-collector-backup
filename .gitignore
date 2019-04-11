@@ -1,4 +1,2 @@
-collectd
 build
-.vscode/ipch/
-collectd_plugin/
+.vscode/ipch

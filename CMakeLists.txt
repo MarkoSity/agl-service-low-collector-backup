@@ -1,4 +1,4 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.6)
 include(${CMAKE_CURRENT_SOURCE_DIR}/conf.d/cmake/config.cmake)
-#add_subdirectory(src/collectd/plugin/cpu)
+add_subdirectory(src/collectd)
 add_subdirectory(src/lowCollector)
