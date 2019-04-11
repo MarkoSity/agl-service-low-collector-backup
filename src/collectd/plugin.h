@@ -222,10 +222,10 @@ int plugin_init(void);
 int plugin_deinit(void);
 
 /* METRICS INIT */
-int metrics_init(value_list_t list);
+int metrics_init(value_list_t *list);
 
 /* METRICS ADD */
-int metrics_add(value_list_t list);
+int metrics_add(value_list_t *list);
 
 /* METRICS DEINIT */
 void metrics_deinit(void);

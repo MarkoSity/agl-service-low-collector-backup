@@ -105,7 +105,8 @@ static void simpleRead(afb_req_t request)
     {
         AFB_API_NOTICE(api, "Metrics loaded");
         printf("Number of metrics : %ld\n", (*Metrics)->size);
-        /* for(int i = 0 ; i != (*Metrics)->size ; i++)
+#if 0
+        for(int i = 0 ; i != (*Metrics)->size ; i++)
         {
             printf("Value counter : %ld\n", (*Metrics)->metrics[i].values->counter);
             printf("Value gauge : %f\n", (*Metrics)->metrics[i].values->gauge);
@@ -119,7 +120,8 @@ static void simpleRead(afb_req_t request)
             printf("Plugin instance : %s\n", (*Metrics)->metrics[i].plugin_instance);
             printf("Type : %s\n", (*Metrics)->metrics[i].type);
             printf("Type instance : %s\n\n", (*Metrics)->metrics[i].type_instance);
-        } */
+        }
+#endif
 
         afb_req_success(request, NULL, "Plugin succesfully read");
         (*Metrics_deinit)();
