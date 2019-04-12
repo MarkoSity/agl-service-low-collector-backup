@@ -26,26 +26,85 @@ plugin_t *Plugin_collectd;
 metrics_t *Metrics_collectd;
 
 /* Plugin init */
-int plugin_init(void)
+int plugin_init(char *plugin_label)
 {
     Plugin_collectd = (plugin_t*)malloc(sizeof(plugin_t));
     if(!Plugin_collectd)
     {
+        printf("%s : Plugin malloc failed\n", __func__);
         return -1;
     }
+
+    Plugin_collectd->plugin_callback = (plugin_callback_t*)malloc(sizeof(plugin_callback_t));
+    if(!Plugin_collectd->plugin_callback)
+    {
+        printf("%s : Plugin callbacks malloc failed\n", __func__);
+        return -1;
+    }
+
+    Plugin_collectd->plugin_callback[0].name = (char *)malloc(strlen(plugin_label)*sizeof(char));
+    if(!Plugin_collectd->plugin_callback[0].name)
+    {
+        printf("%s : Plugin name malloc failed\n", __func__);
+        return -1;
+    }
+
+    /* Copie du string contenu dans le label dans le premier emplacement */
+    strcpy(Plugin_collectd->plugin_callback[0].name, plugin_label);
+    Plugin_collectd->size = 1;
     printf("Plugin initialized\n");
     return 0;
 }
 
-/* Plugin deinit */
-int plugin_deinit(void)
+int plugin_add(char *plugin_label)
 {
-    free(Plugin_collectd);
-    if(Plugin_collectd)
+    /* Trivial case, the plugin is empty, no need to check if a plugin with the name plugin_label exists */
+    if(!Plugin_collectd)
     {
+        if(plugin_init(plugin_label))
+        {
+            printf("%s : Plugin init failed\n", __func__);
+            return -1;
+        }
+    }
+
+    /* Here we have to add at the end of the plugin table the argument list */
+    else
+    {
+        /* If a plugin with label name already exists,we dont want to add this plugin */
+        for(int i = 0 ; i != Plugin_collectd->size ; i++)
+        {
+            if(strncmp(Plugin_collectd->plugin_callback[i].name, plugin_label, max_size(strlen(plugin_label), strlen(Plugin_collectd->plugin_callback[i].name))))
+            {
+                printf("A plugin with the name %s alreay exists", plugin_label);
+                return -1;
+            }
+        }
+
+        /* If we reach that point, we want to add an other plugin in the plugin table */
+        if(! (Plugin_collectd->plugin_callback = realloc(Plugin_collectd->plugin_callback, (Plugin_collectd->size + 1)*sizeof(plugin_callback_t)))) {
+           printf("%s : Plugin realloc failed\n", __func__);
+           return -1;
+       }
+
+       Plugin_collectd->plugin_callback[Plugin_collectd->size].name = (char *)malloc(strlen(plugin_label)*sizeof(char));
+       if(!Plugin_collectd->plugin_callback[Plugin_collectd->size].name)
+    {
+        printf("%s : Plugin name malloc failed\n", __func__);
         return -1;
     }
+    strcpy(Plugin_collectd->plugin_callback[Plugin_collectd->size].name, plugin_label);
+    Plugin_collectd->size ++;
+    }
+
     return 0;
+}
+
+/* Plugin deinit */
+void plugin_deinit(void)
+{
+    Plugin_collectd->plugin_callback = NULL;
+    Plugin_collectd->size = 0;
 }
 
 /* Metrics INIT */
@@ -55,14 +114,14 @@ int metrics_init(value_list_t *list)
     Metrics_collectd->metrics = (value_list_t*)malloc(sizeof(value_list_t));
     if(!Metrics_collectd || !Metrics_collectd->metrics)
     {
-        printf("metrics_init : Metrics malloc failed \n");
+        printf("%s : Metrics malloc failed\n", __func__);
         return -1;
     }
     memcpy(&Metrics_collectd->metrics[0], list, sizeof(value_list_t));
     Metrics_collectd->metrics->values = (value_t*)malloc(list->values_len*sizeof(value_t));
     if(!Metrics_collectd->metrics->values) {
-        printf("metrics_init : Metrics malloc failed \n");
-        return -2;
+        printf("%s : Metrics value malloc failed \n", __func__);
+        return -1;
     }
     memcpy(Metrics_collectd->metrics[0].values, list->values, list->values_len*sizeof(value_t));
     Metrics_collectd->size = 1;
@@ -76,48 +135,27 @@ int metrics_add(value_list_t *list)
     if(!Metrics_collectd)
     {
         if(metrics_init(list)) {
-            printf("%s : Metrics malloc failed\n", __func__);
+            printf("%s : Metrics init failed\n", __func__);
             return -1;
         }
-
-        printf("Value to add : %lf\n", list->values->gauge);
-        printf("Metrics_add : %lf\n", Metrics_collectd->metrics[Metrics_collectd->size - 1].values->gauge);
-        printf("Metrics size : %ld\n", Metrics_collectd->size);
     }
 
-    /* Here we have to add at the end of the table the argument list */
+    /* Here we have to add at the end of the metrics table the argument list */
     else
     {
-        printf("Metrics previous content : \n\t");
-        for(int i = 0 ; i != Metrics_collectd->size ; i ++)
-        {
-            printf("%d Metrics previous value : %lf\n\t", i, Metrics_collectd->metrics[i].values->gauge);
-        }
-        printf("\n");
-
-        /* Increase the metrics table size and realloc an other space in the table to store an other metric*/
-        printf("value to add : %lf\n", list->values->gauge);
-        printf("current size : %ld\n\n", Metrics_collectd->size);
 
        if(! (Metrics_collectd->metrics = realloc(Metrics_collectd->metrics, (Metrics_collectd->size + 1)*sizeof(value_list_t)))) {
            printf("%s : Metrics realloc failed\n", __func__);
            return -1;
        }
 
-        /* Copy the new value in the tampon */
+        /* Copy the new value in the metrics table */
         memcpy(&Metrics_collectd->metrics[Metrics_collectd->size], list, sizeof(value_list_t));
         Metrics_collectd->metrics[Metrics_collectd->size].values = (value_t*)malloc(list->values_len*sizeof(value_t));
         memcpy(Metrics_collectd->metrics[Metrics_collectd->size].values, list->values, list->values_len*sizeof(value_t));
 
         Metrics_collectd->size ++;
     }
-
-    printf("Metrics content : \n\t");
-    for(int i = 0 ; i != Metrics_collectd->size ; i ++)
-    {
-        printf("%d Metrics value : %lf\n\t", i, Metrics_collectd->metrics[i].values->gauge);
-    }
-    printf("\n");
 
     return 0;
 }
@@ -137,7 +175,7 @@ void metrics_deinit(void)
 int plugin_register_init(const char *name, int (*callback)(void))
 {
     /* Store in the plugin the desired callback */
-    Plugin_collectd->init = callback;
+    Plugin_collectd->plugin_callback->init = callback;
     printf("Initialization callback stored in the plugin\n");
     return 0;
 }
@@ -150,7 +188,7 @@ int plugin_register_config(const char *name,
 {
 
     /* Store in the plugin the desired callback */
-    Plugin_collectd->config = callback;
+    Plugin_collectd->plugin_callback->config = callback;
     printf("Configuration callback stored in the plugin\n");
     return 0;
 }
@@ -179,7 +217,7 @@ int plugin_dispatch_values(value_list_t *vl)
 int plugin_register_read(const char *name, int (*callback)(user_data_t *))
 {
     /* Store in the plugin the desired callback */
-    Plugin_collectd->read = callback;
+    Plugin_collectd->plugin_callback->read = callback;
     printf("Read callback stored in the plugin\n");
     return 0;
 }
@@ -353,4 +391,14 @@ meta_data_t *meta_data_create(void)
 meta_entry_t *md_entry_clone(const meta_entry_t *orig)
 {
     return NULL;
+}
+
+/* max_size */
+size_t max_size(size_t a, size_t b)
+{
+    if(a >= b)
+    {
+        return a;
+    }
+    return b;
 }

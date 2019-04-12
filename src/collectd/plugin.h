@@ -186,14 +186,30 @@ typedef void (*module_register_t)(void);
                             Plugin structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
+typedef struct plugin_callback_s plugin_callback_t;
+struct plugin_callback_s
+{
+    char *name;
+    plugin_init_cb init;
+    plugin_config_cb config;
+    plugin_read_cb read;
+};
+
 typedef struct plugin_s plugin_t;
+struct plugin_s
+{
+    plugin_callback_t *plugin_callback;
+    size_t size;
+};
+
+/* typedef struct plugin_s plugin_t;
 struct plugin_s
 {
     plugin_init_cb init;
     plugin_config_cb config;
     plugin_read_cb read;
 };
-
+ */
 typedef struct metrics_s metrics_t;
 struct metrics_s
 {
@@ -205,21 +221,31 @@ struct metrics_s
                             Global variables functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
-typedef int (*plugin_init_t)(void);
-typedef int (*plugin_deinit_t)(void);
+/* PLUGIN */
+typedef int (*plugin_init_t)(char *);
+typedef int (*plugin_add_t)(char *);
+typedef void (*plugin_deinit_t)(void);
 
-typedef int (*metrics_init_t)(void);
+/* METRICS */
+typedef int (*metrics_init_t)(value_list_t *);
+typedef int (*metrics_add_t)(value_list_t *);
 typedef void (*metrics_deinit_t)(void);
+
+/* SIZE */
+typedef size_t (*max_size_t)(size_t a, size_t b);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Plugin Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 /* PLUGIN INIT */
-int plugin_init(void);
+int plugin_init(char *plugin_label);
+
+/* PLUGIN ADD */
+int plugin_add(char *plugin_label);
 
 /* PLUGIN DEINIT */
-int plugin_deinit(void);
+void plugin_deinit(void);
 
 /* METRICS INIT */
 int metrics_init(value_list_t *list);
@@ -276,5 +302,8 @@ char *sstrerror(int errnum, char *buf, size_t buflen);
 
 /* counter_diff */
 counter_t counter_diff(counter_t old_value, counter_t new_value);
+
+/* max_size */
+size_t max_size(size_t a, size_t b);
 
 #endif
