@@ -28,7 +28,6 @@
  **/
 
 #include "plugin.h"
-#include <math.h>
 
 #ifdef HAVE_MACH_KERN_RETURN_H
 #include <mach/kern_return.h>
@@ -178,13 +177,6 @@ static int pnumcpu;
       (sum) += (val);                                                          \
   } while (0)
 
-#define IS_TRUE(s)                                                             \
-  ((strcasecmp("true", (s)) == 0) || (strcasecmp("yes", (s)) == 0) ||          \
-   (strcasecmp("on", (s)) == 0))
-#define IS_FALSE(s)                                                            \
-  ((strcasecmp("false", (s)) == 0) || (strcasecmp("no", (s)) == 0) ||          \
-   (strcasecmp("off", (s)) == 0))
-
 struct cpu_state_s {
   value_to_rate_state_t conv;
   gauge_t rate;
@@ -198,18 +190,6 @@ static size_t cpu_states_num; /* #cpu_states allocated */
 /* Highest CPU number in the current iteration. Used by the dispatch logic to
  * determine how many CPUs there were. Reset to 0 by cpu_reset(). */
 static size_t global_cpu_num;
-
-static bool report_by_cpu;
-static bool report_by_state;
-static bool report_percent;
-static bool report_num_cpu;
-static bool report_guest;
-static bool subtract_guest;
-
-static const char *config_keys[] = {"ReportByCpu",      "ReportByState",
-                                    "ReportNumCpu",     "ValuesPercentage",
-                                    "ReportGuestState", "SubtractGuestState"};
-static int config_keys_num = STATIC_ARRAY_SIZE(config_keys);
 
 static int cpu_config(char const *key, char const *value) /* {{{ */
 {
@@ -348,7 +328,9 @@ static void submit_percent(int cpu_num, int cpu_state, gauge_t value) {
    * method will only report a subset. The remaining states are left as
    * NAN and we ignore them here. */
   if (isnan(value))
+  {
     return;
+  }
 
   submit_value(cpu_num, cpu_state, "percent", (value_t){.gauge = value});
 }
@@ -373,8 +355,7 @@ static int cpu_states_alloc(size_t cpu_num) /* {{{ */
 
   tmp = (cpu_state_t*) realloc(cpu_states, sz * sizeof(*cpu_states));
   if (tmp == NULL) {
-    ERROR("cpu plugin: realloc failed.");
-    return ENOMEM;
+    return -1;
   }
   cpu_states = tmp;
   tmp = cpu_states + cpu_states_num;
@@ -435,6 +416,57 @@ static int total_rate(gauge_t *sum_by_state, size_t state, derive_t d,
              &total_conv[TOTAL_WAIT], now);
 #endif /* }}} HAVE_PERFSTAT */
 
+static void aggregate(gauge_t *sum_by_state) /* {{{ */
+{
+  for (size_t state = 0; state < COLLECTD_CPU_STATE_MAX; state++)
+    sum_by_state[state] = NAN;
+
+  for (size_t cpu_num = 0; cpu_num < global_cpu_num; cpu_num++) {
+    cpu_state_t *this_cpu_states = get_cpu_state(cpu_num, 0);
+
+    this_cpu_states[COLLECTD_CPU_STATE_ACTIVE].rate = NAN;
+
+    for (size_t state = 0; state < COLLECTD_CPU_STATE_ACTIVE; state++) {
+      if (!this_cpu_states[state].has_value)
+        continue;
+
+      RATE_ADD(sum_by_state[state], this_cpu_states[state].rate);
+      if (state != COLLECTD_CPU_STATE_IDLE)
+        RATE_ADD(this_cpu_states[COLLECTD_CPU_STATE_ACTIVE].rate,
+                 this_cpu_states[state].rate);
+    }
+
+    if (!isnan(this_cpu_states[COLLECTD_CPU_STATE_ACTIVE].rate))
+      this_cpu_states[COLLECTD_CPU_STATE_ACTIVE].has_value = true;
+
+    RATE_ADD(sum_by_state[COLLECTD_CPU_STATE_ACTIVE],
+             this_cpu_states[COLLECTD_CPU_STATE_ACTIVE].rate);
+  }
+
+#if defined(HAVE_PERFSTAT) /* {{{ */
+  cdtime_t now = cdtime();
+  perfstat_cpu_total_t cputotal = {0};
+
+  if (!perfstat_cpu_total(NULL, &cputotal, sizeof(cputotal), 1)) {
+    WARNING("cpu plugin: perfstat_cpu_total: %s", STRERRNO);
+    return;
+  }
+
+  /* Reset COLLECTD_CPU_STATE_ACTIVE */
+  sum_by_state[COLLECTD_CPU_STATE_ACTIVE] = NAN;
+
+  /* Physical Processor Utilization */
+  total_rate(sum_by_state, COLLECTD_CPU_STATE_IDLE, (derive_t)cputotal.pidle,
+             &total_conv[TOTAL_IDLE], now);
+  total_rate(sum_by_state, COLLECTD_CPU_STATE_USER, (derive_t)cputotal.puser,
+             &total_conv[TOTAL_USER], now);
+  total_rate(sum_by_state, COLLECTD_CPU_STATE_SYSTEM, (derive_t)cputotal.psys,
+             &total_conv[TOTAL_SYS], now);
+  total_rate(sum_by_state, COLLECTD_CPU_STATE_WAIT, (derive_t)cputotal.pwait,
+             &total_conv[TOTAL_WAIT], now);
+#endif /* }}} HAVE_PERFSTAT */
+} /* }}} void aggregate */
+
 /* Commits (dispatches) the values for one CPU or the global aggregation.
  * cpu_num is the index of the CPU to be committed or -1 in case of the global
  * aggregation. rates is a pointer to COLLECTD_CPU_STATE_MAX gauge_t values
@@ -491,20 +523,21 @@ static void cpu_commit_without_aggregation(void)
 } /* }}} void cpu_commit_without_aggregation */
 
 /* Aggregates the internal state and dispatches the metrics. */
-static void cpu_commit(void)
+static void cpu_commit(void) /* {{{ */
 {
   gauge_t global_rates[COLLECTD_CPU_STATE_MAX] = {
-      NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN
+      NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN /* Batman! */
   };
 
-  if (report_num_cpu){
-      cpu_commit_num_cpu((gauge_t)global_cpu_num);
-  }
+  if (report_num_cpu)
+    cpu_commit_num_cpu((gauge_t)global_cpu_num);
 
   if (report_by_state && report_by_cpu && !report_percent) {
     cpu_commit_without_aggregation();
     return;
   }
+
+  aggregate(global_rates);
 
   if (!report_by_cpu) {
     cpu_commit_one(-1, global_rates);
@@ -516,10 +549,10 @@ static void cpu_commit(void)
     gauge_t local_rates[COLLECTD_CPU_STATE_MAX] = {
         NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN, NAN};
 
-    for (size_t state = 0; state < COLLECTD_CPU_STATE_MAX; state++){
-        if (this_cpu_states[state].has_value)
+    for (size_t state = 0; state < COLLECTD_CPU_STATE_MAX; state++)
+      if (this_cpu_states[state].has_value)
         local_rates[state] = this_cpu_states[state].rate;
-    }
+
     cpu_commit_one((int)cpu_num, local_rates);
   }
 } /* }}} void cpu_commit */
@@ -604,7 +637,6 @@ static int cpu_read(user_data_t *tmp) {
   int numfields;
 
   if ((fh = fopen("/proc/stat", "r")) == NULL) {
-    ERROR("cpu plugin: fopen (/proc/stat) failed: %s", STRERRNO);
     return -1;
   }
 
@@ -849,8 +881,21 @@ static int cpu_read(user_data_t *tmp) {
   return 0;
 }
 
-void module_register(void) {
-  plugin_register_init("cpu", init);
-  plugin_register_config("cpu", cpu_config, config_keys, config_keys_num);
-  plugin_register_read("cpu", cpu_read);
+int module_register(size_t plugin_index) {
+  if(plugin_register_init("cpu", init, plugin_index))
+  {
+    return -1;
+  }
+
+  if(plugin_register_config("cpu", cpu_config, plugin_index))
+  {
+    return -1;
+  }
+
+  if(plugin_register_read("cpu", cpu_read, plugin_index))
+  {
+    return -1;
+  }
+
+  return 0;
 } /* void module_register */

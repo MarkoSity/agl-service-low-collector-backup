@@ -26,9 +26,23 @@ PROJECT_TARGET_ADD(cpu)
         PREFIX ""
         SUFFIX ".so"
         OUTPUT_NAME ${TARGET_NAME}
+  )
+
+  PROJECT_TARGET_ADD(mem)
+    set(SRC_MEM
+		"memory.c"
     )
 
-PROJECT_TARGET_ADD(plugin)
+    ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_MEM})
+
+  SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
+        LABELS "PLUGIN"
+        PREFIX ""
+        SUFFIX ".so"
+        OUTPUT_NAME ${TARGET_NAME}
+  )
+
+  PROJECT_TARGET_ADD(plugin)
 
     set(SRC_PLUGIN
 		"plugin.c"
@@ -41,4 +55,4 @@ PROJECT_TARGET_ADD(plugin)
         PREFIX ""
         SUFFIX ".so"
         OUTPUT_NAME ${TARGET_NAME}
-    )
+  )

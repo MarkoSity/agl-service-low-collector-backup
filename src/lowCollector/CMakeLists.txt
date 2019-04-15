@@ -21,13 +21,8 @@ PROJECT_TARGET_ADD(lowCollector)
     "lowCollector.c"
 	)
 
-	set(SRC_PLUGIN
-    "../collectd/plugin.c"
-    )
-
 	# Define project Targets
 	ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_LOWCOLLECTOR})
-                                      #${SRC_PLUGIN})
 
 	# Binder exposes a unique public entry point
 	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES

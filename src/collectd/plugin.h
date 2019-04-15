@@ -20,10 +20,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <dlfcn.h>
 #include <string.h>
+#include <math.h>
 #include "config.h"
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,20 +35,6 @@
 #define NOTIF_MAX_MSG_LEN 256
 
 #define CLOCK_REALTIME			0
-
-#define ERRBUF_SIZE 256
-
-#define STRERROR(e) sstrerror((e), (char[ERRBUF_SIZE]){0}, ERRBUF_SIZE)
-
-extern int *__errno_location (void) __THROW __attribute_const__;
-
-#define errno (*__errno_location ())
-
-#define STRERRNO STRERROR(errno)
-
-#define LOG_ERR 3
-
-#define ERROR(...) plugin_log(LOG_ERR, __VA_ARGS__)
 
 #define NS_TO_CDTIME_T(ns)                                                     \
   (cdtime_t) {                                                                 \
@@ -85,11 +73,17 @@ extern void __assert_fail (const char *__assertion, const char *__file,
         __assert_fail (#expr, __FILE__, __LINE__, __ASSERT_FUNCTION);	\
     }))
 
+#define IS_TRUE(s)                                                             \
+  ((strcasecmp("true", (s)) == 0) || (strcasecmp("yes", (s)) == 0) ||          \
+   (strcasecmp("on", (s)) == 0))
+
+#define IS_FALSE(s)                                                            \
+  ((strcasecmp("false", (s)) == 0) || (strcasecmp("no", (s)) == 0) ||          \
+   (strcasecmp("off", (s)) == 0))
+
 #define	EINVAL		22
 
 #define	EAGAIN		11
-
-#define	ENOMEM		12
 
 #define DS_TYPE_COUNTER 0
 
@@ -99,12 +93,22 @@ extern void __assert_fail (const char *__assertion, const char *__file,
 
 #define DS_TYPE_ABSOLUTE 3
 
+#define OCONFIG_TYPE_STRING 0
+
+#define OCONFIG_TYPE_NUMBER 1
+
+#define OCONFIG_TYPE_BOOLEAN 2
+
 #define STATIC_ARRAY_SIZE(a) (sizeof(a) / sizeof(*(a)))
 
 #define VALUE_LIST_INIT                                                        \
   { .values = NULL, .meta = NULL }
 
+#define PLUGIN_PATH "../build/src/collectd/./plugin.so"
+
 #define CPU_PATH "../build/src/collectd/./cpu.so"
+
+#define MEM_PATH "../build/src/collectd/./mem.so"
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Variables
@@ -173,14 +177,67 @@ struct value_list_s {
   meta_data_t *meta;
 };
 
+typedef struct oconfig_value_s oconfig_value_t;
+struct oconfig_value_s {
+  union {
+    char *string;
+    double number;
+    int boolean;
+  } value;
+  int type;
+};
+
+typedef struct oconfig_item_s oconfig_item_t;
+struct oconfig_item_s {
+  char *key;
+  oconfig_value_t *values;
+  int values_num;
+
+  oconfig_item_t *parent;
+  oconfig_item_t *children;
+  int children_num;
+};
+
+typedef struct plugin_ctx_s plugin_ctx_t;
+struct plugin_ctx_s {
+  char *name;
+  cdtime_t interval;
+  cdtime_t flush_interval;
+  cdtime_t flush_timeout;
+};
+
+typedef struct cf_complex_callback_s {
+  char *type;
+  int (*callback)(oconfig_item_t *);
+  plugin_ctx_t ctx;
+  struct cf_complex_callback_s *next;
+} cf_complex_callback_t;
+
+cf_complex_callback_t *complex_callback_head;
+bool plugin_ctx_key_initialized;
+
+/* CPU PLUGIN SETTING VARIABLES */
+bool report_by_cpu;
+bool report_by_state;
+bool report_percent;
+bool report_num_cpu;
+bool report_guest;
+bool subtract_guest;
+
+/* MEM PLUGIN SETTINGS VARIABLES */
+
+bool values_absolute;
+bool values_percentage;
+
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 typedef int (*plugin_init_cb)(void);
 typedef int (*plugin_config_cb)(char const*, char const*);
+typedef int (*plugin_complex_config_cb)(oconfig_item_t *);
 typedef int (*plugin_read_cb)(user_data_t *);
-typedef void (*module_register_t)(void);
+typedef int (*module_register_t)(size_t);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Plugin structure
@@ -192,6 +249,7 @@ struct plugin_callback_s
     char *name;
     plugin_init_cb init;
     plugin_config_cb config;
+    plugin_complex_config_cb complex_config;
     plugin_read_cb read;
 };
 
@@ -202,20 +260,15 @@ struct plugin_s
     size_t size;
 };
 
-/* typedef struct plugin_s plugin_t;
-struct plugin_s
-{
-    plugin_init_cb init;
-    plugin_config_cb config;
-    plugin_read_cb read;
-};
- */
 typedef struct metrics_s metrics_t;
 struct metrics_s
 {
     value_list_t *metrics;
     size_t size;
 };
+
+plugin_ctx_t ctx_init = {0};
+pthread_key_t plugin_ctx_key;
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Global variables functions
@@ -224,7 +277,7 @@ struct metrics_s
 /* PLUGIN */
 typedef int (*plugin_init_t)(char *);
 typedef int (*plugin_add_t)(char *);
-typedef void (*plugin_deinit_t)(void);
+typedef int (*plugin_deinit_t)(size_t);
 
 /* METRICS */
 typedef int (*metrics_init_t)(value_list_t *);
@@ -233,6 +286,11 @@ typedef void (*metrics_deinit_t)(void);
 
 /* SIZE */
 typedef size_t (*max_size_t)(size_t a, size_t b);
+
+/* SETTINGS RESET */
+typedef void (*cpu_settings_reset_t)(void);
+
+typedef void (*mem_settings_reset_t)(void);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Plugin Functions
@@ -245,7 +303,7 @@ int plugin_init(char *plugin_label);
 int plugin_add(char *plugin_label);
 
 /* PLUGIN DEINIT */
-void plugin_deinit(void);
+int plugin_deinit(size_t plugin_index);
 
 /* METRICS INIT */
 int metrics_init(value_list_t *list);
@@ -256,23 +314,50 @@ int metrics_add(value_list_t *list);
 /* METRICS DEINIT */
 void metrics_deinit(void);
 
+/* CPU SETTINGS RESET */
+void cpu_settings_reset(void);
+
+/* MEM SETTINGS RESET */
+void mem_settings_reset(void);
+
 /* INITIALIZATION */
-int plugin_register_init(const char *name, int (*callback)(void));
+int plugin_register_init(const char *name, int (*callback)(void), size_t plugin_index);
 
 /* CONFIGURATION */
 int plugin_register_config(const char *name,
                            int (*callback)(const char *key,
                            const char *val),
-                           const char **keys, int keys_num);
+                           size_t plugin_index);
+
+/* COMPLEX CONFIG */
+int plugin_register_complex_config(const char *type,
+                                   int (*callback)(oconfig_item_t *),
+                                   size_t plugin_index);
+
+/* CONTEXT CREATE */
+plugin_ctx_t *plugin_ctx_create(void);
+
+/* GET CONTEXT */
+plugin_ctx_t plugin_get_ctx(void);
 
 /* LOG */
-void plugin_log(int level, const char *format, ...);
+/* void plugin_log(int level, const char *format, ...); */
 
 /* DISPATCH VALUES */
 int plugin_dispatch_values(value_list_t *vl);
 
+/* LIST CLONE */
+value_list_t *plugin_value_list_clone(value_list_t const *vl_orig);
+
+/* LIST FREE */
+void plugin_value_list_free(value_list_t *vl);
+
+/* DISPATCH MULTI VALUE */
+__attribute__((sentinel)) int plugin_dispatch_multivalue(value_list_t const *template,
+                           bool store_percentage, int store_type, ...);
+
 /* READ */
-int plugin_register_read(const char *name, int (*callback)(user_data_t *));
+int plugin_register_read(const char *name, int (*callback)(user_data_t *), size_t plugin_index);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Additional Functions
@@ -306,4 +391,10 @@ counter_t counter_diff(counter_t old_value, counter_t new_value);
 /* max_size */
 size_t max_size(size_t a, size_t b);
 
-#endif
+/* cf_util_get_boolean */
+int cf_util_get_boolean(const oconfig_item_t *ci, bool *ret_bool);
+
+/* cf_register_complex */
+int cf_register_complex(const char *type, int (*callback)(oconfig_item_t *));
+
+#endif /* PLUGIN_H */
