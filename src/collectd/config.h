@@ -1147,7 +1147,7 @@
 #define HAVE_STATFS 1
 
 /* Define to 1 if you have the <statgrab.h> header file. */
-#define HAVE_STATGRAB_H 1
+#define HAVE_STATGRAB_H 0
 
 /* Define to 1 if you have the `statvfs' function. */
 #define HAVE_STATVFS 1
