@@ -15,43 +15,64 @@
 ###########################################################################
 
 PROJECT_TARGET_ADD(cpu)
-    set(SRC_CPU
-		"cpu.c"
+    SET(SRC_CPU
+    "${CMAKE_CURRENT_SOURCE_DIR}/sources/src/cpu.c"
+    #"cpu.c"
     )
 
     ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_CPU})
 
+    TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src/daemon
+    )
+
+    # FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
+    TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
+        PUBLIC -DFP_LAYOUT_NEED_NOTHING
+        PUBLIC -DHAVE_CONFIG_H
+    )
+
+    target_compile_options(${TARGET_NAME}
+        PUBLIC -Wno-conversion -Wno-int-conversion
+        PUBLIC -std=c99
+    )
+
   SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-        LABELS "PLUGIN"
+        LABELS "PLUGINS"
         PREFIX ""
         SUFFIX ".so"
         OUTPUT_NAME ${TARGET_NAME}
   )
 
   PROJECT_TARGET_ADD(mem)
-    set(SRC_MEM
+    SET(SRC_MEM
 		"memory.c"
     )
 
-    ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_MEM})
+  PROJECT_TARGET_ADD(collectd_glue)
 
-  SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-        LABELS "PLUGIN"
-        PREFIX ""
-        SUFFIX ".so"
-        OUTPUT_NAME ${TARGET_NAME}
-  )
-
-  PROJECT_TARGET_ADD(plugin)
-
-    set(SRC_PLUGIN
-		"plugin.c"
+    set(SRC_COLLECTD_GLUE
+		"collectd_glue.c"
     )
 
-    ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_PLUGIN})
+    ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_COLLECTD_GLUE})
+
+    TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src/daemon
+    )
+
+    # FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
+    TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
+        PUBLIC -DFP_LAYOUT_NEED_NOTHING
+        PUBLIC -DHAVE_CONFIG_H
+    )
 
   SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-        LABELS "PLUGIN"
+        LABELS "COLLECTD_GLUE"
         PREFIX ""
         SUFFIX ".so"
         OUTPUT_NAME ${TARGET_NAME}

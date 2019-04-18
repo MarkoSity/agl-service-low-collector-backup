@@ -21,8 +21,26 @@ PROJECT_TARGET_ADD(lowCollector)
     "lowCollector.c"
 	)
 
+	set(SRC_API
+    "api.c"
+	)
+
 	# Define project Targets
-	ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_LOWCOLLECTOR})
+	ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_LOWCOLLECTOR};
+                    ${SRC_API})
+
+  TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../collectd
+    ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src/daemon
+  )
+
+  # FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
+  TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
+  PUBLIC -DFP_LAYOUT_NEED_NOTHING
+  PUBLIC -DHAVE_CONFIG_H
+  )
+
 
 	# Binder exposes a unique public entry point
 	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
