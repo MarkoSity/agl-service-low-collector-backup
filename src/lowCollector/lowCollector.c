@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            INCLUDE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
 #include "api.h"
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            DEFINE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
+#define PLUGIN_PATH "../build/src/collectd/./collectd_glue.so"
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Global variables
@@ -43,21 +53,19 @@ static void afb_init(afb_req_t req)
 {
   /* Variables definition */
   json_object *arg;
+  json_object *res;
 
   /* Variables allocation */
   arg = json_object_new_object();
+  res = json_object_new_object();
 
   /* Variables initialization */
   arg = afb_req_json(req);
+  res = api_plugin_init(arg);
 
-  if(api_plugin_init(*Plugin, arg))
-  {
-    AFB_REQ_ERROR(req, "Fail to initialize the plugin.");
-    afb_req_fail(req, NULL, "Fail to initialize the plugin.");
-  }
-  /* Notify that the initialization is a success */
+  /* Display the initialization output */
   AFB_API_NOTICE(afbBindingV3root, "Verbosity macro at level notice invoked at init invocation");
-  afb_req_success(req, NULL, "Plugin initialization succeed.");
+  afb_req_success(req, res, "Plugin initialization.");
   return;
 }
 
@@ -68,42 +76,20 @@ static void afb_init(afb_req_t req)
 static void afb_config(afb_req_t req)
 {
   /* Variables definition */
-  afb_api_t api;
   json_object *arg;
+  json_object *res;
 
   /* Variables allocation */
   arg = json_object_new_object();
+  res = json_object_new_object();
 
   /* Variables initialization */
-  api = afb_req_get_api(req);
   arg = afb_req_json(req);
+  res = api_plugin_config(arg);
 
-  /* Ensure the plugin list ain't NULL */
-  if(!(*Plugin))
-  {
-    AFB_API_ERROR(api, "Plugins list is NULL.");
-    afb_req_fail(req, NULL, "Plugins list is NULL.");
-    return;
-  }
-
-  /* Ensure the plugin list ain't empty */
-  if(!(*Plugin)->size)
-  {
-    AFB_REQ_ERROR(req, "Plugin list is empty.");
-    afb_req_fail(req, NULL, "Plugins list is empty.");
-    return;
-  }
-
-  if(api_plugin_config(*Plugin, arg))
-  {
-    AFB_REQ_ERROR(req, "Fail to configure the plugin.");
-    afb_req_fail(req, NULL, "Fail to configure the plugin.");
-    return;
-  }
-
-  /* Notify that the configuration is a success */
-  AFB_API_NOTICE(afbBindingV3root, "Verbosity macro at level notice invoked at config cpu invocation");
-  afb_req_success(req, NULL, "Plugin configuration succeed.");
+  /* Display the configuration output */
+  AFB_API_NOTICE(afbBindingV3root, "Verbosity macro at level notice invoked at config invocation");
+  afb_req_success(req, res, "Plugin configuration.");
   return;
 }
 
@@ -147,9 +133,13 @@ static void afb_read(afb_req_t req)
     return;
   }
 
+  AFB_API_NOTICE(afbBindingV3root, "Verbosity macro at level notice invoked at read invocation");
+  afb_req_success(req, res, "Plugin succesfully read");
+  return;
+
 
   /* TEST TO KNOW WHAT ARE THE METRIC FIELDS OF A NEW PLUGIN */
-  else
+  /* else
   {
     if(*Metrics)
     {
@@ -180,7 +170,7 @@ static void afb_read(afb_req_t req)
     }
 
     return;
-  }
+  } */
 }
 
 static void afb_reset(afb_req_t req)

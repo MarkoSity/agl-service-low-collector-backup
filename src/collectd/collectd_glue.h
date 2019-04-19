@@ -24,194 +24,6 @@
                             Define
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
-#if 0
-#define NOTIF_MAX_MSG_LEN 256
-
-#define CLOCK_REALTIME			0
-
-#define NS_TO_CDTIME_T(ns)                                                     \
-  (cdtime_t) {                                                                 \
-    ((((cdtime_t)(ns)) / 1000000000) << 30) |                                  \
-        ((((((cdtime_t)(ns)) % 1000000000) << 30) + 500000000) / 1000000000)   \
-  }
-
-#define TIMESPEC_TO_CDTIME_T(ts)                                               \
-  NS_TO_CDTIME_T(1000000000ULL * (ts)->tv_sec + (ts)->tv_nsec)
-
-#define CDTIME_T_TO_DOUBLE(t)                                                  \
-  (double) { ((double)(t)) / 1073741824.0 }
-
-#define TIME_T_TO_CDTIME_T_STATIC(t) (((cdtime_t)(t)) << 30)
-
-#define TIME_T_TO_CDTIME_T(t)                                                  \
-  (cdtime_t) { TIME_T_TO_CDTIME_T_STATIC(t) }
-
-#define sfree(ptr)                                                             \
-  do {                                                                         \
-    free(ptr);                                                                 \
-    (ptr) = NULL;                                                              \
-  } while (0)
-
-#define __ASSERT_FUNCTION	__extension__ __PRETTY_FUNCTION__
-
-extern void __assert_fail (const char *__assertion, const char *__file,
-			   unsigned int __line, const char *__function)
-     __THROW __attribute__ ((__noreturn__));
-
-/* #define assert(expr)							\
-  ((void) sizeof ((expr) ? 1 : 0), __extension__ ({			\
-      if (expr)								\
-        ;						\
-      else								\
-        __assert_fail (#expr, __FILE__, __LINE__, __ASSERT_FUNCTION);	\
-    })) */
-
-#define IS_TRUE(s)                                                             \
-  ((strcasecmp("true", (s)) == 0) || (strcasecmp("yes", (s)) == 0) ||          \
-   (strcasecmp("on", (s)) == 0))
-
-#define IS_FALSE(s)                                                            \
-  ((strcasecmp("false", (s)) == 0) || (strcasecmp("no", (s)) == 0) ||          \
-   (strcasecmp("off", (s)) == 0))
-
-#ifndef ERRBUF_SIZE
-#define ERRBUF_SIZE 256
-#endif
-
-#define STRERROR(e) sstrerror((e), (char[ERRBUF_SIZE]){0}, ERRBUF_SIZE)
-#define STRERRNO STRERROR(errno)
-
-#ifndef LOG_ERR
-#define LOG_ERR 3
-#endif
-
-#define ERROR(...) plugin_log(LOG_ERR, __VA_ARGS__)
-
-#define	EINVAL		22
-
-#define	EAGAIN		11
-
-#define DS_TYPE_COUNTER 0
-
-#define DS_TYPE_GAUGE 1
-
-#define DS_TYPE_DERIVE 2
-
-#define DS_TYPE_ABSOLUTE 3
-
-#define OCONFIG_TYPE_STRING 0
-
-#define OCONFIG_TYPE_NUMBER 1
-
-#define OCONFIG_TYPE_BOOLEAN 2
-
-#define STATIC_ARRAY_SIZE(a) (sizeof(a) / sizeof(*(a)))
-
-#define VALUE_LIST_INIT                                                        \
-  { .values = NULL, .meta = NULL }
-
-/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            Variables
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
-
-typedef struct user_data_s user_data_t;
-struct user_data_s {
-  void *data;
-  void (*free_func)(void *);
-};
-
-typedef uint64_t counter_t;
-typedef double gauge_t;
-typedef uint64_t derive_t;
-typedef uint64_t absolute_t;
-typedef uint64_t cdtime_t;
-
-typedef union value_u value_t;
-union value_u {
-  counter_t counter;
-  gauge_t gauge;
-  derive_t derive;
-  absolute_t absolute;
-};
-
-typedef struct value_to_rate_state_s value_to_rate_state_t;
-struct value_to_rate_state_s {
-  value_t last_value;
-  cdtime_t last_time;
-};
-
-typedef union meta_value_u meta_value_t;
-union meta_value_u {
-  char *mv_string;
-  int64_t mv_signed_int;
-  uint64_t mv_unsigned_int;
-  double mv_double;
-  bool mv_boolean;
-};
-
-typedef struct meta_entry_s meta_entry_t;
-struct meta_entry_s {
-  char *key;
-  meta_value_t value;
-  int type;
-  meta_entry_t *next;
-};
-
-typedef struct meta_data_s meta_data_t;
-struct meta_data_s {
-  meta_entry_t *head;
-  pthread_mutex_t lock;
-};
-
-typedef struct value_list_s value_list_t;
-struct value_list_s {
-  value_t *values;
-  size_t values_len;
-  cdtime_t time;
-  cdtime_t interval;
-  char host[DATA_MAX_NAME_LEN];
-  char plugin[DATA_MAX_NAME_LEN];
-  char plugin_instance[DATA_MAX_NAME_LEN];
-  char type[DATA_MAX_NAME_LEN];
-  char type_instance[DATA_MAX_NAME_LEN];
-  meta_data_t *meta;
-};
-
-typedef struct oconfig_value_s oconfig_value_t;
-struct oconfig_value_s {
-  union {
-    char *string;
-    double number;
-    int boolean;
-  } value;
-  int type;
-};
-
-typedef struct oconfig_item_s oconfig_item_t;
-struct oconfig_item_s {
-  char *key;
-  oconfig_value_t *values;
-  int values_num;
-
-  oconfig_item_t *parent;
-  oconfig_item_t *children;
-  int children_num;
-};
-
-typedef struct plugin_ctx_s plugin_ctx_t;
-struct plugin_ctx_s {
-  char *name;
-  cdtime_t interval;
-  cdtime_t flush_interval;
-  cdtime_t flush_timeout;
-};
-
-/* MEM PLUGIN SETTINGS VARIABLES */
-
-bool values_absolute;
-bool values_percentage;
-#endif
-
 typedef struct cf_complex_callback_s {
   char *type;
   int (*callback)(oconfig_item_t *);
@@ -226,10 +38,8 @@ bool plugin_ctx_key_initialized;
                             Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
-/* typedef int (*plugin_init_cb)(void); */
 typedef int (*plugin_config_cb)(char const*, char const*);
 typedef int (*plugin_complex_config_cb)(oconfig_item_t *);
-/* typedef int (*plugin_read_cb)(user_data_t *); */
 typedef void (*module_register_t)(void);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,6 +78,7 @@ struct metrics_s
 typedef int (*plugin_init_t)(char *);
 typedef int (*plugin_add_t)(char *);
 typedef int (*plugin_deinit_t)(size_t);
+typedef int (*index_plugin_label_t)(plugin_t *, const char *);
 
 /* METRICS */
 typedef int (*metrics_init_t)(value_list_t *);
@@ -276,6 +87,8 @@ typedef void (*metrics_deinit_t)(void);
 
 /* SIZE */
 typedef size_t (*max_size_t)(size_t a, size_t b);
+
+
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             PLUGIN LIST FUNCTIONS

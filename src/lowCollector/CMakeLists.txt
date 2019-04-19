@@ -19,32 +19,34 @@ PROJECT_TARGET_ADD(lowCollector)
 
     set(SRC_LOWCOLLECTOR
     "lowCollector.c"
-	)
+	  )
 
 	set(SRC_API
     "api.c"
+  )
+  
+  set(SRC_API_CPU
+    "api_cpu.c"
 	)
 
 	# Define project Targets
-	ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_LOWCOLLECTOR};
-                    ${SRC_API})
+	ADD_LIBRARY(${TARGET_NAME} MODULE ${SRC_LOWCOLLECTOR};
+                                    ${SRC_API};
+                                    ${SRC_API_CPU})
 
-  TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../collectd
-    ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src/daemon
+  TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../collectd
+                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src
+                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src/daemon
   )
 
   # FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
-  TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
-  PUBLIC -DFP_LAYOUT_NEED_NOTHING
-  PUBLIC -DHAVE_CONFIG_H
+  TARGET_COMPILE_DEFINITIONS(${TARGET_NAME} PUBLIC -DFP_LAYOUT_NEED_NOTHING
+                                            PUBLIC -DHAVE_CONFIG_H
   )
 
 
 	# Binder exposes a unique public entry point
-	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-	    PREFIX "afb-"
-		LABELS "BINDING"
-		OUTPUT_NAME ${TARGET_NAME}
+	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES PREFIX "afb-"
+		                                              LABELS "BINDING"
+		                                              OUTPUT_NAME ${TARGET_NAME}
 	)

@@ -46,25 +46,37 @@ int plugin_init(const char *plugin_label)
     if(!Plugin_collectd)
         return -1;
 
+    printf("%s : Plugin address %p : \n", __func__, Plugin_collectd);
+
     Plugin_collectd->plugin_callback = (plugin_callback_t*)malloc(sizeof(plugin_callback_t));
     if(!Plugin_collectd->plugin_callback)
         return -1;
+
+    printf("%s : Plugin callback address %p : \n", __func__, Plugin_collectd->plugin_callback);
 
     Plugin_collectd->plugin_callback[0].init = (plugin_init_cb)malloc(sizeof(plugin_init_cb));
     if(!Plugin_collectd->plugin_callback[0].init)
         return -1;
 
+    printf("%s : Plugin callback init address %p : \n", __func__, Plugin_collectd->plugin_callback[0].init);
+
     Plugin_collectd->plugin_callback[0].config = (plugin_config_cb)malloc(sizeof(plugin_config_cb));
     if(!Plugin_collectd->plugin_callback[0].config)
         return -1;
+
+    printf("%s : Plugin callback config address %p : \n", __func__, Plugin_collectd->plugin_callback[0].config);
 
     Plugin_collectd->plugin_callback[0].complex_config = (plugin_complex_config_cb)malloc(sizeof(plugin_complex_config_cb));
     if(!Plugin_collectd->plugin_callback[0].complex_config)
         return -1;
 
+    printf("%s : Plugin callback complex config address %p : \n", __func__, Plugin_collectd->plugin_callback[0].complex_config);
+
     Plugin_collectd->plugin_callback[0].read = (plugin_read_cb)malloc(sizeof(plugin_read_cb));
     if(!Plugin_collectd->plugin_callback[0].read)
         return -1;
+
+    printf("%s : Plugin callback read address %p : \n", __func__, Plugin_collectd->plugin_callback[0].read);
 
     Plugin_collectd->plugin_callback[0].name = (char *)malloc(strlen(plugin_label)*sizeof(char));
     if(!Plugin_collectd->plugin_callback[0].name)
@@ -296,9 +308,12 @@ int plugin_register_init(const char *name, plugin_init_cb callback)
         plugin_add(name);
 
     plugin_index = index_plugin_label(Plugin_collectd, name);
+    printf("%s : Plugin index : %d\n", __func__, plugin_index);
 
     /* Store in the plugin previously created the initialization callback */
-    Plugin_collectd->plugin_callback[plugin_index].init = callback;
+    /* Plugin_collectd->plugin_callback[plugin_index].init = callback; */
+    memcpy(Plugin_collectd->plugin_callback[plugin_index].init, callback, sizeof(plugin_init_cb));
+    printf("%s : init callback address : %p\n", __func__, Plugin_collectd->plugin_callback[plugin_index].init);
     return 0;
 }
 
@@ -319,9 +334,10 @@ int plugin_register_config(const char *name,
         plugin_add(name);
 
     plugin_index = index_plugin_label(Plugin_collectd, name);
+    printf("%s : Plugin index : %d\n", __func__, plugin_index);
 
     /* Store in the plugin previously created the initialization callback */
-    Plugin_collectd->plugin_callback[plugin_index].config = callback;
+    memcpy(Plugin_collectd->plugin_callback[plugin_index].config, callback, sizeof(plugin_config_cb));
     return 0;
 }
 
@@ -554,6 +570,7 @@ int plugin_register_read(const char *name, int (*callback)(void))
         plugin_add(name);
 
     plugin_index = index_plugin_label(Plugin_collectd, name);
+    printf("%s : Plugin index : %d\n", __func__, plugin_index);
 
     /* Store in the plugin previously created the initialization callback */
     Plugin_collectd->plugin_callback[plugin_index].read = (plugin_read_cb)callback;
