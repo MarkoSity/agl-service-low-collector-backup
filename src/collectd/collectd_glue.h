@@ -21,20 +21,6 @@
 #include "sources/src/utils/common/common.h"
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            Define
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
-
-typedef struct cf_complex_callback_s {
-  char *type;
-  int (*callback)(oconfig_item_t *);
-  plugin_ctx_t ctx;
-  struct cf_complex_callback_s *next;
-} cf_complex_callback_t;
-
-cf_complex_callback_t *complex_callback_head;
-bool plugin_ctx_key_initialized;
-
-/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
@@ -121,85 +107,6 @@ void cpu_settings_reset(void);
 /* MEM SETTINGS RESET */
 void mem_settings_reset(void);
 
-#if 0
-/* INITIALIZATION */
-int plugin_register_init(const char *name, plugin_init_cb callback);
-
-/* CONFIGURATION */
-int plugin_register_config(const char *name,
-                          int (*callback)(const char *key,
-                                          const char *val),
-                          const char **keys, int keys_num);
-
-/* COMPLEX CONFIG */
-int plugin_register_complex_config(const char *type,
-                                   int (*callback)(oconfig_item_t *),
-                                   size_t plugin_index);
-
-/* LOG */
-void plugin_log(int level, char const *format, ...);
-
-/* CONTEXT CREATE */
-plugin_ctx_t *plugin_ctx_create(void);
-
-/* GET CONTEXT */
-plugin_ctx_t plugin_get_ctx(void);
-
-/* LOG */
-/* void plugin_log(int level, const char *format, ...); */
-
-/* DISPATCH VALUES */
-int plugin_dispatch_values(value_list_t *vl);
-
-/* LIST CLONE */
-value_list_t *plugin_value_list_clone(value_list_t const *vl_orig);
-
-/* LIST FREE */
-void plugin_value_list_free(value_list_t *vl);
-
-/* DISPATCH MULTI VALUE */
-__attribute__((sentinel)) int plugin_dispatch_multivalue(value_list_t const *template,
-                           bool store_percentage, int store_type, ...);
-
-/* READ */
-int plugin_register_read(const char *name, int (*callback)(void));
-
-/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            Additional Functions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
-
-/* strsplit */
-int strsplit(char *string, char **fields, size_t size);
-
-/* sstrncpy */
-char *sstrncpy(char *dest, const char *src, size_t n);
-
-/* strncpy */
-extern char *strncpy (char *__restrict __dest,
-		      const char *__restrict __src, size_t __n)
-     __THROW __nonnull ((1, 2));
-
-/* value_to_rate */
-int value_to_rate(gauge_t *ret_rate,
-                  value_t value, int ds_type, cdtime_t t,
-                  value_to_rate_state_t *state);
-
-/* cdtime */
-cdtime_t cdtime(void);
-
-/* sstrerror */
-char *sstrerror(int errnum, char *buf, size_t buflen);
-
-/* counter_diff */
-counter_t counter_diff(counter_t old_value, counter_t new_value);
-
-/* cf_util_get_boolean */
-int cf_util_get_boolean(const oconfig_item_t *ci, bool *ret_bool);
-
-/* cf_register_complex */
-int cf_register_complex(const char *type, int (*callback)(oconfig_item_t *));
-
-#endif
 /* max_size */
 size_t max_size(size_t a, size_t b);
 #endif /* COLLECTD_GLUE_H */

@@ -17,26 +17,43 @@
 # Add target to project dependency list
 PROJECT_TARGET_ADD(lowCollector)
 
-    set(SRC_LOWCOLLECTOR
+  set(SRC_LOWCOLLECTOR
     "lowCollector.c"
-	  )
+  )
+  
+  set(SRC_API_WRITE_JSON
+    "write/write_json.c"
+	)
 
 	set(SRC_API
-    "api.c"
+    "api/api.c"
   )
   
   set(SRC_API_CPU
-    "api_cpu.c"
-	)
+    "api/cpu/api_cpu.c"
+  )
+  
+  set(SRC_API_MEMORY
+    "api/memory/api_memory.c"
+  )
+  
+  set(SRC_API_PROCESSES
+    "api/processes/api_processes.c"
+  )
 
 	# Define project Targets
-	ADD_LIBRARY(${TARGET_NAME} MODULE ${SRC_LOWCOLLECTOR};
+  ADD_LIBRARY(${TARGET_NAME} MODULE ${SRC_LOWCOLLECTOR};
+                                    ${SRC_API_WRITE_JSON}
                                     ${SRC_API};
-                                    ${SRC_API_CPU})
+                                    ${SRC_API_CPU};
+                                    ${SRC_API_MEMORY};
+                                    ${SRC_API_PROCESSES})
 
   TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../collectd
                                                    ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src
                                                    ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src/daemon
+                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src/utils
+                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../collectd/sources/src/utils/metadata
   )
 
   # FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
