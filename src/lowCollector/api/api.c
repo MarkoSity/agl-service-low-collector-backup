@@ -221,7 +221,7 @@ json_object *api_plugin_reset(userdata_t *userdata, json_object *arg)
   char *plugin_label;
   int reset_count;
   max_size_t Max_size;
-  plugin_t **Plugin;
+  plugin_list_t **plugin_list;
 
   /* Allocate the answer of the function */
   res = json_object_new_object();
@@ -233,18 +233,18 @@ json_object *api_plugin_reset(userdata_t *userdata, json_object *arg)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global plugin list variable from the collectd_glue library */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Ensure the plugin list is not NULL */
-  if(!(*Plugin))
+  if(!(*plugin_list))
     return json_object_new_string("Plugin list NULL.");
 
   /* Ensure the plugin list is not empty */
-  if(!(*Plugin)->size)
+  if(!(*plugin_list)->size)
     return json_object_new_string("Plugin list empty.");
-  
+
   /* Retrieve the j-son arguments */
   args = json_object_new_object();
   if(!json_object_object_get_ex(arg, "plugin", &args))

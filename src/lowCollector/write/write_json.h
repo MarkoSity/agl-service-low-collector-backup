@@ -37,7 +37,6 @@
                           WRITE JSON CALLBACK
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
-json_object *write_json_collectd(metrics_t *metrics_list);
-json_object *write_json(metrics_t *metrics_list);
+json_object *write_json(metrics_list_t *metrics_list);
 
 #endif /* WRITE_JSON_H */

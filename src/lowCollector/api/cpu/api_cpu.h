@@ -39,12 +39,6 @@ json_object *api_cpu_init(userdata_t *userdata);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 json_object *api_cpu_config(userdata_t *userdata, json_object *args);
-json_object *api_cpu_config_mean(userdata_t *userdata, int plugin_index);
-json_object *api_cpu_config_mean_cpu(userdata_t *userdata, int plugin_index);
-json_object *api_cpu_config_mean_state(userdata_t *userdata, int plugin_index);
-json_object *api_cpu_config_percent_state_cpu(userdata_t *userdata, int plugin_index);
-json_object *api_cpu_config_jiffies_state_cpu(userdata_t *userdata, int plugin_index);
-json_object *api_cpu_config_number_cpu(userdata_t *userdata, int plugin_index);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             READ CALLBACK

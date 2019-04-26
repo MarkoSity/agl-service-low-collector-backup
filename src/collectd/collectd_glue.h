@@ -32,8 +32,8 @@ typedef void (*module_register_t)(void);
                             Plugin structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
-typedef struct plugin_callback_s plugin_callback_t;
-struct plugin_callback_s
+typedef struct plugin_s plugin_t;
+struct plugin_s
 {
     char *name;
     plugin_init_cb init;
@@ -42,15 +42,15 @@ struct plugin_callback_s
     plugin_read_cb read;
 };
 
-typedef struct plugin_s plugin_t;
-struct plugin_s
+typedef struct plugin_list_s plugin_list_t;
+struct plugin_list_s
 {
-    plugin_callback_t *plugin_callback;
+    plugin_t *plugin;
     size_t size;
 };
 
-typedef struct metrics_s metrics_t;
-struct metrics_s
+typedef struct metrics_list_s metrics_list_t;
+struct metrics_list_s
 {
     value_list_t *metrics;
     size_t size;
@@ -64,7 +64,7 @@ struct metrics_s
 typedef int (*plugin_init_t)(char *);
 typedef int (*plugin_add_t)(char *);
 typedef int (*plugin_deinit_t)(size_t);
-typedef int (*index_plugin_label_t)(plugin_t *, const char *);
+typedef int (*index_plugin_label_t)(plugin_list_t *, const char *);
 
 /* METRICS */
 typedef int (*metrics_init_t)(value_list_t *);
@@ -90,7 +90,7 @@ int plugin_add(const char *plugin_label);
 int plugin_deinit(size_t plugin_index);
 
 /* INDEX PLUGIN LABEL */
-int index_plugin_label(plugin_t *plugin_list, const char *plugin_label);
+int index_plugin_label(plugin_list_t *plugin_list, const char *plugin_label);
 
 /* METRICS INIT */
 int metrics_init(value_list_t const *list);

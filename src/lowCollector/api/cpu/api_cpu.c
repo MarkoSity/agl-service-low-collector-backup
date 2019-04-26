@@ -34,7 +34,7 @@
 json_object *api_cpu_init(userdata_t *userdata)
 {
   /* Variable definition */
-  plugin_t **Plugin;
+  plugin_list_t **plugin_list;
   module_register_t module_register;
   index_plugin_label_t Index_plugin_label;
 
@@ -47,8 +47,8 @@ json_object *api_cpu_init(userdata_t *userdata)
   }
 
   /* Retrieve the global variable plugin list from the collectd glue library */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
@@ -62,7 +62,7 @@ json_object *api_cpu_init(userdata_t *userdata)
     return json_object_new_string(dlerror());
 
   /* First let's check if a plugin with the cpu name already exists */
-    if((*Index_plugin_label)(*Plugin, "cpu") != -1)
+    if((*Index_plugin_label)(*plugin_list, "cpu") != -1)
       return json_object_new_string("Plugin already stored");
 
   /* Call the module register function to create the plugin and store its callbacks */
@@ -75,6 +75,232 @@ json_object *api_cpu_init(userdata_t *userdata)
                             CONFIGURATION CALLBACK
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
+json_object *api_cpu_config_mean(userdata_t *userdata, int plugin_index)
+{
+  /* Variables definition */
+  plugin_list_t **plugin_list;
+  metrics_list_t **metrics_list;
+  metrics_deinit_t Metrics_deinit;
+
+  /* Retrieve the global variable plugin list */
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the global variable metrics list */
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  if(!metrics_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the metrics deinit function */
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  if(!Metrics_deinit)
+    return json_object_new_string(dlerror());
+
+  if((*plugin_list)->plugin[plugin_index].config("ReportByCpu", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ReportByState", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
+    return json_object_new_string("Fail to apply 'mean'");
+
+  /* Launch the cpu read callack in order to initialise the collection */
+  (*plugin_list)->plugin[plugin_index].read(NULL);
+
+  /* If the metrics list is fill with metrics, we reset it */
+  if((*metrics_list) && (*metrics_list)->size)
+    (*Metrics_deinit)();
+
+  return json_object_new_string("'mean' apply.");
+}
+
+json_object *api_cpu_config_mean_cpu(userdata_t *userdata, int plugin_index)
+{
+  /* Variables definition */
+  plugin_list_t **plugin_list;
+  metrics_list_t **metrics_list;
+  metrics_deinit_t Metrics_deinit;
+
+  /* Retrieve the global variable plugin list */
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the global variable metrics list */
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  if(!metrics_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the metrics deinit function */
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  if(!Metrics_deinit)
+    return json_object_new_string(dlerror());
+
+  if((*plugin_list)->plugin[plugin_index].config("ReportByCpu", "true")
+  || (*plugin_list)->plugin[plugin_index].config("ReportByState", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
+    return json_object_new_string("Fail to apply 'mean cpu'.");
+
+  /* Launch the cpu read callack in order to initialise the collection */
+  (*plugin_list)->plugin[plugin_index].read(NULL);
+
+  /* If the metrics list is fill with metrics, we reset it */
+  if((*metrics_list) && (*metrics_list)->size)
+    (*Metrics_deinit)();
+
+  return json_object_new_string("'mean cpu' apply.");
+}
+
+json_object *api_cpu_config_mean_state(userdata_t *userdata, int plugin_index)
+{
+  /* Variables definition */
+  plugin_list_t **plugin_list;
+  metrics_list_t **metrics_list;
+  metrics_deinit_t Metrics_deinit;
+
+  /* Retrieve the global variable plugin list */
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the global variable metrics list */
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  if(!metrics_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the metrics deinit function */
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  if(!Metrics_deinit)
+    return json_object_new_string(dlerror());
+
+  if((*plugin_list)->plugin[plugin_index].config("ReportByCpu", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ReportByState", "true")
+  || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
+    return json_object_new_string("Fail to apply 'mean state'.");
+
+  /* Launch the cpu read callack in order to initialise the collection */
+  (*plugin_list)->plugin[plugin_index].read(NULL);
+
+  /* If the metrics list is fill with metrics, we reset it */
+  if((*metrics_list) && (*metrics_list)->size)
+    (*Metrics_deinit)();
+
+  return json_object_new_string("'mean state' apply.");
+}
+
+json_object *api_cpu_config_percent_state_cpu(userdata_t *userdata, int plugin_index)
+{
+  /* Variables definition */
+  plugin_list_t **plugin_list;
+  metrics_list_t **metrics_list;
+  metrics_deinit_t Metrics_deinit;
+
+  /* Retrieve the global variable plugin list */
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the global variable metrics list */
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  if(!metrics_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the metrics deinit function */
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  if(!Metrics_deinit)
+    return json_object_new_string(dlerror());
+
+  if((*plugin_list)->plugin[plugin_index].config("ReportByCpu", "true")
+  || (*plugin_list)->plugin[plugin_index].config("ReportByState", "true")
+  || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "true"))
+    return json_object_new_string("Fail to apply 'percent state cpu'.");
+
+  /* Launch the cpu read callack in order to initialise the collection */
+  (*plugin_list)->plugin[plugin_index].read(NULL);
+
+  /* If the metrics list is fill with metrics, we reset it */
+  if((*metrics_list) && (*metrics_list)->size)
+    (*Metrics_deinit)();
+
+  return json_object_new_string("'percent state cpu' apply.");
+}
+
+json_object *api_cpu_config_jiffies_state_cpu(userdata_t *userdata, int plugin_index)
+{
+  /* Variables definition */
+  plugin_list_t **plugin_list;
+  metrics_list_t **metrics_list;
+  metrics_deinit_t Metrics_deinit;
+
+  /* Retrieve the global variable plugin list */
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the global variable metrics list */
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  if(!metrics_list)
+    return json_object_new_string(dlerror());
+
+  /* Retrieve the metrics deinit function */
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  if(!Metrics_deinit)
+    return json_object_new_string(dlerror());
+
+  if((*plugin_list)->plugin[plugin_index].config("ReportByCpu", "true")
+  || (*plugin_list)->plugin[plugin_index].config("ReportByState", "true")
+  || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
+    return json_object_new_string("Fail to apply 'jiffies state cpu'.");
+
+  /* Launch the cpu read callack in order to initialise the collection */
+  (*plugin_list)->plugin[plugin_index].read(NULL);
+
+  /* If the metrics list is fill with metrics, we reset it */
+  if((*metrics_list) && (*metrics_list)->size)
+    (*Metrics_deinit)();
+
+  return json_object_new_string("'jiffies state cpu' apply.");
+}
+
+json_object *api_cpu_config_number_cpu(userdata_t *userdata, int plugin_index)
+{
+  /* Variables definition */
+  plugin_list_t **plugin_list;
+  metrics_list_t **metrics_list;
+  metrics_deinit_t Metrics_deinit;
+
+  /* Retrieve the global variable plugin list */
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
+    return json_object_new_string(dlerror());
+
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  if(!metrics_list)
+    return json_object_new_string(dlerror());
+
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  if(!Metrics_deinit)
+    return json_object_new_string(dlerror());
+
+  if((*plugin_list)->plugin[plugin_index].config("ReportByCpu", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ReportByState", "false")
+  || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "true")
+  || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
+    return json_object_new_string("Fail to apply 'number'.");
+
+  /* Launch the cpu read callack in order to initialise the collection */
+  (*plugin_list)->plugin[plugin_index].read(NULL);
+
+  /* If the metrics list is fill with metrics, we reset it */
+  if((*metrics_list) && (*metrics_list)->size)
+    (*Metrics_deinit)();
+
+  return json_object_new_string("'number' apply.");
+}
+
 json_object *api_cpu_config(userdata_t *userdata, json_object *args)
 {
   /* Variable definition */
@@ -83,7 +309,7 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
   char *config_label;
   max_size_t Max_size;
   index_plugin_label_t Index_plugin_label;
-  plugin_t **Plugin;
+  plugin_list_t **plugin_list;
 
   /* Variable allocation */
   config_label = (char*)malloc(sizeof(char));
@@ -103,16 +329,16 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
     return json_object_new_string(dlerror());
 
   /* Retrieve the plugin list variable */
-  Plugin = (plugin_t**)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Ensure the plugin list ain't NULL */
-  if(!(*Plugin))
+  if(!(*plugin_list))
     return json_object_new_string("Plugin list is null.");
 
   /* First, let's ensure the list has a cpu plugin initialize */
-  plugin_index = (*Index_plugin_label)(*Plugin, "cpu");
+  plugin_index = (*Index_plugin_label)(*plugin_list, "cpu");
   if(plugin_index == -1)
     return json_object_new_string("Plugin not initialized.");
 
@@ -125,7 +351,7 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
   config_label = (char*)json_object_get_string(args);
 
   /* Initialize the cpu plugin */
-   if((*Plugin)->plugin_callback[plugin_index].init())
+   if((*plugin_list)->plugin[plugin_index].init())
     return json_object_new_string("Fail to initialize cpu plugin.");
 
   /* Mean configuration case */
@@ -156,232 +382,6 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
     return json_object_new_string("Unknown configuration.");
 }
 
-json_object *api_cpu_config_mean(userdata_t *userdata, int plugin_index)
-{
-  /* Variables definition */
-  plugin_t **Plugin;
-  metrics_t **Metrics;
-  metrics_deinit_t Metrics_deinit;
-
-  /* Retrieve the global variable plugin list */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the global variable metrics list */
-  Metrics = (metrics_t **)dlsym(userdata->handle_collectd, "Metrics_collectd");
-  if(!Metrics)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
-  if(!Metrics_deinit)
-    return json_object_new_string(dlerror());
-
-  if((*Plugin)->plugin_callback[plugin_index].config("ReportByCpu", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportByState", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportNumCpu", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'mean'");
-
-  /* Launch the cpu read callack in order to initialise the collection */
-  (*Plugin)->plugin_callback[plugin_index].read(NULL);
-
-  /* If the metrics list is fill with metrics, we reset it */
-  if((*Metrics) && (*Metrics)->size)
-    (*Metrics_deinit)();
-
-  return json_object_new_string("'mean' apply.");
-}
-
-json_object *api_cpu_config_mean_cpu(userdata_t *userdata, int plugin_index)
-{
-  /* Variables definition */
-  plugin_t **Plugin;
-  metrics_t **Metrics;
-  metrics_deinit_t Metrics_deinit;
-
-  /* Retrieve the global variable plugin list */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the global variable metrics list */
-  Metrics = (metrics_t **)dlsym(userdata->handle_collectd, "Metrics_collectd");
-  if(!Metrics)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
-  if(!Metrics_deinit)
-    return json_object_new_string(dlerror());
-
-  if((*Plugin)->plugin_callback[plugin_index].config("ReportByCpu", "true")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportByState", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportNumCpu", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'mean cpu'.");
-
-  /* Launch the cpu read callack in order to initialise the collection */
-  (*Plugin)->plugin_callback[plugin_index].read(NULL);
-
-  /* If the metrics list is fill with metrics, we reset it */
-  if((*Metrics) && (*Metrics)->size)
-    (*Metrics_deinit)();
-
-  return json_object_new_string("'mean cpu' apply.");
-}
-
-json_object *api_cpu_config_mean_state(userdata_t *userdata, int plugin_index)
-{
-  /* Variables definition */
-  plugin_t **Plugin;
-  metrics_t **Metrics;
-  metrics_deinit_t Metrics_deinit;
-
-  /* Retrieve the global variable plugin list */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the global variable metrics list */
-  Metrics = (metrics_t **)dlsym(userdata->handle_collectd, "Metrics_collectd");
-  if(!Metrics)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
-  if(!Metrics_deinit)
-    return json_object_new_string(dlerror());
-
-  if((*Plugin)->plugin_callback[plugin_index].config("ReportByCpu", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportByState", "true")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportNumCpu", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'mean state'.");
-
-  /* Launch the cpu read callack in order to initialise the collection */
-  (*Plugin)->plugin_callback[plugin_index].read(NULL);
-
-  /* If the metrics list is fill with metrics, we reset it */
-  if((*Metrics) && (*Metrics)->size)
-    (*Metrics_deinit)();
-
-  return json_object_new_string("'mean state' apply.");
-}
-
-json_object *api_cpu_config_percent_state_cpu(userdata_t *userdata, int plugin_index)
-{
-  /* Variables definition */
-  plugin_t **Plugin;
-  metrics_t **Metrics;
-  metrics_deinit_t Metrics_deinit;
-
-  /* Retrieve the global variable plugin list */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the global variable metrics list */
-  Metrics = (metrics_t **)dlsym(userdata->handle_collectd, "Metrics_collectd");
-  if(!Metrics)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
-  if(!Metrics_deinit)
-    return json_object_new_string(dlerror());
-
-  if((*Plugin)->plugin_callback[plugin_index].config("ReportByCpu", "true")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportByState", "true")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportNumCpu", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ValuesPercentage", "true"))
-    return json_object_new_string("Fail to apply 'percent state cpu'.");
-
-  /* Launch the cpu read callack in order to initialise the collection */
-  (*Plugin)->plugin_callback[plugin_index].read(NULL);
-
-  /* If the metrics list is fill with metrics, we reset it */
-  if((*Metrics) && (*Metrics)->size)
-    (*Metrics_deinit)();
-
-  return json_object_new_string("'percent state cpu' apply.");
-}
-
-json_object *api_cpu_config_jiffies_state_cpu(userdata_t *userdata, int plugin_index)
-{
-  /* Variables definition */
-  plugin_t **Plugin;
-  metrics_t **Metrics;
-  metrics_deinit_t Metrics_deinit;
-
-  /* Retrieve the global variable plugin list */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the global variable metrics list */
-  Metrics = (metrics_t **)dlsym(userdata->handle_collectd, "Metrics_collectd");
-  if(!Metrics)
-    return json_object_new_string(dlerror());
-
-  /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
-  if(!Metrics_deinit)
-    return json_object_new_string(dlerror());
-
-  if((*Plugin)->plugin_callback[plugin_index].config("ReportByCpu", "true")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportByState", "true")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportNumCpu", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'jiffies state cpu'.");
-
-  /* Launch the cpu read callack in order to initialise the collection */
-  (*Plugin)->plugin_callback[plugin_index].read(NULL);
-
-  /* If the metrics list is fill with metrics, we reset it */
-  if((*Metrics) && (*Metrics)->size)
-    (*Metrics_deinit)();
-
-  return json_object_new_string("'jiffies state cpu' apply.");
-}
-
-json_object *api_cpu_config_number_cpu(userdata_t *userdata, int plugin_index)
-{
-  /* Variables definition */
-  plugin_t **Plugin;
-  metrics_t **Metrics;
-  metrics_deinit_t Metrics_deinit;
-
-  /* Retrieve the global variable plugin list */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
-    return json_object_new_string(dlerror());
-
-  Metrics = (metrics_t **)dlsym(userdata->handle_collectd, "Metrics_collectd");
-  if(!Metrics)
-    return json_object_new_string(dlerror());
-
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
-  if(!Metrics_deinit)
-    return json_object_new_string(dlerror());
-
-  if((*Plugin)->plugin_callback[plugin_index].config("ReportByCpu", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportByState", "false")
-  || (*Plugin)->plugin_callback[plugin_index].config("ReportNumCpu", "true")
-  || (*Plugin)->plugin_callback[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'number'.");
-
-  /* Launch the cpu read callack in order to initialise the collection */
-  (*Plugin)->plugin_callback[plugin_index].read(NULL);
-
-  /* If the metrics list is fill with metrics, we reset it */
-  if((*Metrics) && (*Metrics)->size)
-    (*Metrics_deinit)();
-
-  return json_object_new_string("'number' apply.");
-}
-
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             READ CALLBACK
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
@@ -390,8 +390,8 @@ json_object *api_cpu_read(userdata_t *userdata)
 {
   /* Variables definition */
   int plugin_index;
-  metrics_t **Metrics;
-  plugin_t **Plugin;
+  metrics_list_t **metrics_list;
+  plugin_list_t **plugin_list;
   metrics_deinit_t Metrics_deinit;
   max_size_t Max_size;
   index_plugin_label_t Index_plugin_label;
@@ -405,13 +405,13 @@ json_object *api_cpu_read(userdata_t *userdata)
   res = json_object_new_object();
 
   /* Retrieve the global variable plugin list */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global variable metrics list */
-  Metrics = (metrics_t **)dlsym(userdata->handle_collectd, "Metrics_collectd");
-  if(!Metrics)
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  if(!metrics_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the metrics deinit function */
@@ -430,18 +430,18 @@ json_object *api_cpu_read(userdata_t *userdata)
     return json_object_new_string(dlerror());
 
   /* Ensure a plugin named cpu is stored and retrieve its index */
-  plugin_index = (*Index_plugin_label)(*Plugin, "cpu");
+  plugin_index = (*Index_plugin_label)(*plugin_list, "cpu");
   if(plugin_index == -1)
     return json_object_new_string("The cpu plugin is not registered.");
 
   /* Call the cpu callbacks read */
-  if((*Plugin)->plugin_callback[plugin_index].read(NULL))
+  if((*plugin_list)->plugin[plugin_index].read(NULL))
     return json_object_new_string("Fail to execute the cpu read callback.");
 
-  res = write_json((*Metrics));
+  res = write_json((*metrics_list));
 
   /* If the metrics has been filled with values, we reset it */
-  if((*Metrics)->metrics)
+  if((*metrics_list)->metrics)
     (*Metrics_deinit)();
 
   return res;
@@ -454,19 +454,19 @@ json_object *api_cpu_read(userdata_t *userdata)
 json_object *api_cpu_reset(userdata_t *userdata)
 {
   /* Variables definition */
-  plugin_t **Plugin;
+  plugin_list_t **plugin_list;
   plugin_deinit_t Plugin_deinit;
   int plugin_index;
   index_plugin_label_t Index_plugin_label;
 
   /* Retrieve the global plugin list variable */
-  Plugin = (plugin_t **)dlsym(userdata->handle_collectd, "Plugin_collectd");
-  if(!Plugin)
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the plugin deinit function */
   Plugin_deinit = (plugin_deinit_t)dlsym(userdata->handle_collectd, "plugin_deinit");
-  if(!Plugin)
+  if(!Plugin_deinit)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
@@ -479,11 +479,11 @@ json_object *api_cpu_reset(userdata_t *userdata)
     return json_object_new_string("The cpu plugin is not registered.");
 
   /* Ensure the cpu plugin is registered in the plugin list */
-  if((*Index_plugin_label)(*Plugin, "cpu") == -1)
+  if((*Index_plugin_label)(*plugin_list, "cpu") == -1)
     return json_object_new_string("The cpu plugin is not loaded.");
 
   /* Retrieve the index of the cpu plugin */
-  plugin_index = (*Index_plugin_label)(*Plugin, "cpu");
+  plugin_index = (*Index_plugin_label)(*plugin_list, "cpu");
 
   /* Delete the cpu plugin from the list */
   if((*Plugin_deinit)(plugin_index))

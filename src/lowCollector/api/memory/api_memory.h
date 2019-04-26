@@ -39,8 +39,6 @@ json_object *api_memory_init(userdata_t *userdata);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 json_object *api_memory_config(userdata_t *userdata, json_object *args);
-json_object *api_mem_config_percent(userdata_t *userdata, int plugin_index);
-json_object *api_mem_config_absolute(userdata_t *userdata, int plugin_index);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             READ CALLBACK
