@@ -1,3 +1,3 @@
-[submodule "/home/napotsum/Documents/iotbzh/AGL_binder/work/low_collector/collectd/agl-service-low-collector/src/collectd/sources"]
-	path = /home/napotsum/Documents/iotbzh/AGL_binder/work/low_collector/collectd/agl-service-low-collector/src/collectd/sources
+[submodule "src/collectd/sources"]
+	path = src/collectd/sources
 	url = https://github.com/collectd/collectd.git
