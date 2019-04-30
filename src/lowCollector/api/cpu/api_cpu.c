@@ -307,12 +307,10 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
   int plugin_index;
   json_type args_type;
   char *config_label;
+  int label_size;
   max_size_t Max_size;
   index_plugin_label_t Index_plugin_label;
   plugin_list_t **plugin_list;
-
-  /* Variable allocation */
-  config_label = (char*)malloc(sizeof(char));
 
   /* Ensure the cpu library is open */
   if(!userdata->handle_cpu)
@@ -348,11 +346,18 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
     return json_object_new_string("Fail to recognize arguments type (string).");
 
   /* Retrieve the configuration in a string */
+  label_size = json_object_get_string_len(args);
+  config_label = (char *)malloc(label_size*sizeof(char)+1);
+  if(!config_label)
+    return json_object_new_string("Fail to allocate memory.");
+
   config_label = (char*)json_object_get_string(args);
 
   /* Initialize the cpu plugin */
    if((*plugin_list)->plugin[plugin_index].init())
-    return json_object_new_string("Fail to initialize cpu plugin.");
+   {
+     return json_object_new_string("Fail to initialize cpu plugin.");
+   }
 
   /* Mean configuration case */
   if(!strncmp(config_label, "mean", (*Max_size)((size_t) 8, strlen(config_label))))

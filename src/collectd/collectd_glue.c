@@ -25,72 +25,107 @@
 #include <time.h>
 #include "collectd_glue.h"
 
-pthread_mutex_t strerror_r_lock = PTHREAD_MUTEX_INITIALIZER;
-
 char hostname[13] = "marco-laptop";
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            Global plugin variables
+                            Plugin & Metrics
+                                variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 plugin_list_t *Plugin_list;
 metrics_list_t *Metrics_list;
 
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                Useful
+                                function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
+size_t max_size(size_t a, size_t b)
+{
+  if(a >= b)
+    return a;
+
+  return b;
+}
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            Plugin list
+                              function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
 /* Plugin init */
 int plugin_init(const char *plugin_label)
 {
-    /* Allocate a new plugin list instance */
-    Plugin_list = (plugin_list_t *)malloc(sizeof(plugin_list_t));
-    if(!Plugin_list)
-        return -1;
+  /* Allocate a new plugin list instance */
+  Plugin_list = (plugin_list_t *)malloc(sizeof(plugin_list_t));
+  if(!Plugin_list)
+    return -1;
 
-    /* Allocate the first plugin */
-    Plugin_list->plugin = (plugin_t*)malloc(sizeof(plugin_t));
-    if(!Plugin_list->plugin)
-        return -1;
+  /* Allocate the first plugin */
+  Plugin_list->plugin = (plugin_t*)malloc(sizeof(plugin_t));
+  if(!Plugin_list->plugin)
+  {
+    /* Free the memory previously allocated */
+    sfree(Plugin_list);
+    return -1;
+  }
 
-    /* Allocate the name field of the first plugin */
-    Plugin_list->plugin[0].name = (char *)malloc(strlen(plugin_label)*sizeof(char));
-    if(!Plugin_list->plugin[0].name)
-        return -1;
 
-    /* Copy the plugin_label into the name field */
-    strcpy(Plugin_list->plugin[0].name, plugin_label);
+  /* Allocate the name field of the first plugin */
+  Plugin_list->plugin[0].name = (char *)malloc(strlen(plugin_label)*sizeof(char));
+  if(!Plugin_list->plugin[0].name)
+  {
+    /* Free the memory previously allocated */
+    sfree(Plugin_list->plugin);
+    sfree(Plugin_list);
+    return -1;
+  }
 
-    /* Notify the structue we have add a new plugin object */
-    Plugin_list->size = 1;
-    return 0;
+  /* Copy the plugin_label into the name field */
+  strcpy(Plugin_list->plugin[0].name, plugin_label);
+
+  /* Notify the structue we have add a new plugin object */
+  Plugin_list->size = 1;
+  return 0;
 }
 
 int plugin_add(const char *plugin_label)
 {
-    /* Trivial case, the plugin is empty, no need to check if a plugin with the name plugin_label exists */
-    if(!Plugin_list)
-        return plugin_init(plugin_label);
+  /* Variable definition */
+  int index_plugin;
 
-    /* Here we have to add at the end of the plugin list a new plugin */
-    else
+  /* Trivial case, the plugin list is NULL, no need to check if a plugin with the name plugin_label exists */
+  if(!Plugin_list)
+    return plugin_init(plugin_label);
+
+  /* Here we have to add at the end of the plugin list a new plugin */
+  else
+  {
+    /* If a plugin with label name already exists,we dont want to add this plugin */
+    index_plugin = index_plugin_label(Plugin_list, plugin_label);
+    if(index_plugin != -1)
+      return -1;
+
+    /* Proceed to a reallocation of the previous plugin list, and add a new spot */
+    if(!(Plugin_list->plugin = realloc(Plugin_list->plugin, (Plugin_list->size + 1)*sizeof(plugin_t))))
     {
-        /* If a plugin with label name already exists,we dont want to add this plugin */
-        for(int i = 0 ; i != Plugin_list->size ; i++)
-        {
-            if(!strncmp(Plugin_list->plugin[i].name, plugin_label, max_size(strlen(plugin_label), strlen(Plugin_list->plugin[i].name))))
-                return -1;
-        }
-
-        /* Proceed to a reallocation of the previous plugin list, and add a new spot */
-        if(!(Plugin_list->plugin = realloc(Plugin_list->plugin, (Plugin_list->size + 1)*sizeof(plugin_t))))
-           return -1;
-
-        /* Allocate a new name field to the new plugin created */
-        Plugin_list->plugin[Plugin_list->size].name = (char *)malloc(strlen(plugin_label)*sizeof(char));
-        if(!Plugin_list->plugin[Plugin_list->size].name)
-            return -1;
-
-        /* Copy the plugin_label into the name field */
-        strcpy(Plugin_list->plugin[Plugin_list->size].name, plugin_label);
-        Plugin_list->size ++;
+      /* Free the new plugin slot we try to allocate */
+      plugin_deinit(Plugin_list->size);
+      return -1;
     }
+
+    /* Allocate a new name field to the new plugin created */
+    Plugin_list->plugin[Plugin_list->size].name = (char *)malloc(strlen(plugin_label)*sizeof(char));
+    if(!Plugin_list->plugin[Plugin_list->size].name)
+    {
+      /* Free the new plugin slot we try to allocate */
+      plugin_deinit(Plugin_list->size);
+      return -1;
+    }
+
+    /* Copy the plugin_label into the name field */
+    strcpy(Plugin_list->plugin[Plugin_list->size].name, plugin_label);
+    Plugin_list->size ++;
+  }
 
     return 0;
 }
@@ -98,167 +133,196 @@ int plugin_add(const char *plugin_label)
 /* Plugin deinit */
 int plugin_deinit(size_t plugin_index)
 {
-    /* If the index is not valid */
-    if(!&Plugin_list->plugin[plugin_index])
-        return -1;
+  /* If the index is not valid */
+  if(!&Plugin_list->plugin[plugin_index])
+    return -1;
 
-    /* Create a plugin tampon to store the new plugin list */
-    plugin_list_t *plugin;
-    plugin = (plugin_list_t *)malloc(sizeof(plugin_list_t));
-    if(!plugin)
-        return -1;
+  /* Create a plugin tampon to store the new plugin list */
+  plugin_list_t *plugin;
+  plugin = (plugin_list_t *)malloc(sizeof(plugin_list_t));
+  if(!plugin)
+    return -1;
 
-    /* We ensure there is at least one plugin stored */
-    if(!Plugin_list->size)
-        return -1;
+  /* We ensure there is at least one plugin stored */
+  if(!Plugin_list->size)
+    return -1;
 
-    /* Retrieve the new size of the plugin list */
-    plugin->size = Plugin_list->size -1;
+  /* Retrieve the new size of the plugin list */
+  plugin->size = Plugin_list->size -1;
 
-    /* Plugin tampon table allocation */
-    plugin->plugin = (plugin_t *)malloc(plugin->size*sizeof(plugin_t));
-    if(!plugin->plugin)
-        return -1;
+  /* Plugin tampon table allocation */
+  plugin->plugin = (plugin_t *)malloc(plugin->size*sizeof(plugin_t));
+  if(!plugin->plugin)
+    return -1;
 
-    /* Current index of the plugin tampon */
-    int index = 0;
+  /* Current index of the plugin tampon */
+  int index = 0;
 
-    /* Copy each one of the the previous stored plugin in the new tampon list */
-    for(int i = 0 ; i != Plugin_list->size ; i++)
+  /* Copy each one of the the previous stored plugin in the new tampon list */
+  for(int i = 0 ; i != Plugin_list->size ; i++)
+  {
+    /* If the current plugin is not the one we want to delete */
+    if(i != plugin_index)
     {
-        /* If the current plugin is not the one we want to delete */
-        if(i != plugin_index)
-        {
-            /* init callback copy */
-            plugin->plugin[index].init = (plugin_init_cb)malloc(sizeof(plugin_init_cb));
-            if(!plugin->plugin[index].init)
-                return -1;
-            memcpy(&plugin->plugin[index].init, &Plugin_list->plugin[i].init, sizeof(plugin_init_cb));
+      /* init callback copy */
+      plugin->plugin[index].init = (plugin_init_cb)malloc(sizeof(plugin_init_cb));
+      if(!plugin->plugin[index].init)
+        return -1;
+      memcpy(&plugin->plugin[index].init, &Plugin_list->plugin[i].init, sizeof(plugin_init_cb));
 
-            /* config callback copy */
-            plugin->plugin[index].config = (plugin_config_cb)malloc(sizeof(plugin_config_cb));
-            if(!plugin->plugin[index].config)
-                return -1;
-            memcpy(&plugin->plugin[index].config, &Plugin_list->plugin[i].config, sizeof(plugin_config_cb));
+      /* config callback copy */
+      plugin->plugin[index].config = (plugin_config_cb)malloc(sizeof(plugin_config_cb));
+      if(!plugin->plugin[index].config)
+        return -1;
+      memcpy(&plugin->plugin[index].config, &Plugin_list->plugin[i].config, sizeof(plugin_config_cb));
 
-            /* complex config callback copy */
-            plugin->plugin[index].complex_config = (plugin_complex_config_cb)malloc(sizeof(plugin_complex_config_cb));
-            if(!plugin->plugin[index].complex_config)
-                return -1;
-            memcpy(&plugin->plugin[index].complex_config, &Plugin_list->plugin[i].complex_config, sizeof(plugin_complex_config_cb));
+      /* complex config callback copy */
+      plugin->plugin[index].complex_config = (plugin_complex_config_cb)malloc(sizeof(plugin_complex_config_cb));
+      if(!plugin->plugin[index].complex_config)
+        return -1;
+      memcpy(&plugin->plugin[index].complex_config, &Plugin_list->plugin[i].complex_config, sizeof(plugin_complex_config_cb));
 
-            /* read callback copy */
-            plugin->plugin[index].read = (plugin_read_cb)malloc(sizeof(plugin_read_cb));
-            if(!plugin->plugin[index].read)
-                return -1;
-            memcpy(&plugin->plugin[index].read, &Plugin_list->plugin[i].read, sizeof(plugin_read_cb));
+      /* read callback copy */
+      plugin->plugin[index].read = (plugin_read_cb)malloc(sizeof(plugin_read_cb));
+      if(!plugin->plugin[index].read)
+        return -1;
+      memcpy(&plugin->plugin[index].read, &Plugin_list->plugin[i].read, sizeof(plugin_read_cb));
 
-            /* plugin name copy */
-            plugin->plugin[index].name = (char *)malloc(strlen(Plugin_list->plugin[i].name));
-            if(!plugin->plugin[index].name)
-                return -1;
-            strcpy(plugin->plugin[index].name, Plugin_list->plugin[i].name);
+      /* plugin name copy */
+      plugin->plugin[index].name = (char *)malloc(strlen(Plugin_list->plugin[i].name));
+      if(!plugin->plugin[index].name)
+        return -1;
+      strcpy(plugin->plugin[index].name, Plugin_list->plugin[i].name);
 
-            /* Increment the plugin tampon index */
-            index ++;
-        }
+      /* Increment the plugin tampon index */
+      index ++;
     }
+  }
 
-    /* Let's make the Global plugin variable points towards the brand new plugin list */
-    memcpy(Plugin_list, plugin, sizeof(plugin_t));
-    return 0;
+  /* Let's make the Global plugin variable points towards the brand new plugin list */
+  memcpy(Plugin_list, plugin, sizeof(plugin_t));
+  return 0;
 }
+
+
 
 /* INDEX PLUGIN LABEL */
 int index_plugin_label(plugin_list_t *plugin_list, const char *plugin_label)
 {
-    /* If the plugin list is NULL */
-    if(!plugin_list)
-        return -1;
-
-    /* For each one of the plugin stored in the list */
-    for(int i = 0 ; i != plugin_list->size ; i++)
-    {
-        /* If the name matched, return the current index */
-        if(!strncmp(plugin_list->plugin[i].name, plugin_label, max_size(strlen(plugin_label), strlen(plugin_list->plugin->name))))
-            return i;
-    }
-
+  /* If the plugin list is NULL */
+  if(!plugin_list)
     return -1;
+
+  /* For each one of the plugin stored in the list */
+  for(int i = 0 ; i != plugin_list->size ; i++)
+  {
+    /* If the name matched, return the current index */
+    if(!strncmp(plugin_list->plugin[i].name, plugin_label, max_size(strlen(plugin_label), strlen(plugin_list->plugin->name))))
+      return i;
+  }
+
+  return -1;
 }
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            Metrics list
+                              function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 /* Metrics INIT */
 int metrics_init(value_list_t const *list)
 {
-    /* Allocate a new Metrics list */
-    Metrics_list = (metrics_list_t*)malloc(sizeof(metrics_list_t));
-    if(!Metrics_list)
-        return -1;
+  /* Allocate a new Metrics list */
+  Metrics_list = (metrics_list_t*)malloc(sizeof(metrics_list_t));
+  if(!Metrics_list)
+    return -1;
 
-    /* Allocate a new metrics object */
-    Metrics_list->metrics = (value_list_t*)malloc(sizeof(value_list_t));
-    if(!Metrics_list->metrics)
-        return -1;
+  /* Allocate a new metrics object */
+  Metrics_list->metrics = (value_list_t*)malloc(sizeof(value_list_t));
+  if(!Metrics_list->metrics)
+  {
+    /* Free the memory allocated and return an error */
+    sfree(Metrics_list);
+    return -1;
+  }
 
-    /* Copy the content of the argument list into the spot allocated */
-    memcpy(&Metrics_list->metrics[0], list, sizeof(value_list_t));
+  /* Copy the content of the argument list into the spot allocated */
+  memcpy(&Metrics_list->metrics[0], list, sizeof(value_list_t));
 
-    /* Allocate a new metrics value */
-    Metrics_list->metrics->values = (value_t*)malloc(list->values_len*sizeof(value_t));
-    if(!Metrics_list->metrics->values)
-        return -1;
+  /* Allocate a new metrics value */
+  Metrics_list->metrics->values = (value_t*)malloc(list->values_len*sizeof(value_t));
+  if(!Metrics_list->metrics->values)
+  {
+    /* Free the memory allocated and return an error */
+    sfree(Metrics_list->metrics);
+    sfree(Metrics_list);
+    return -1;
+  }
 
-    /* Copy the argument value list into the spot previously allocated */
-    memcpy(Metrics_list->metrics[0].values, list->values, list->values_len*sizeof(value_t));
+  /* Copy the argument value list into the spot previously allocated */
+  memcpy(Metrics_list->metrics[0].values, list->values, list->values_len*sizeof(value_t));
 
-    /* Notify the structure we have add a new metrics */
-    Metrics_list->size = 1;
-    return 0;
+  /* Notify to the structure we have add a new metrics */
+  Metrics_list->size = 1;
+  return 0;
 }
 
 int metrics_add(value_list_t const *list)
 {
-     /* Trivial case, the metrics list is NULL */
-    if(!Metrics_list)
+  /* Trivial case, the metrics list is NULL */
+  if(!Metrics_list)
+  {
+    if(metrics_init(list))
+      return -1;
+  }
+
+  /* Here we have to add at the end of the metrics table the argument list */
+  else
+  {
+    /* Realloc the metrics list and add a new spot at the end */
+    Metrics_list->metrics = realloc(Metrics_list->metrics, (Metrics_list->size + 1)*sizeof(value_list_t));
+    if(!&Metrics_list->metrics[Metrics_list->size])
     {
-        if(metrics_init(list))
-            return -1;
+      /* If something went wrong, we free the whole metrics list and notify the error */
+      metrics_deinit();
+      return -1;
     }
 
-    /* Here we have to add at the end of the metrics table the argument list */
-    else
+    /* Copy the new metrics in the previous new one allocated metrics */
+    memcpy(&Metrics_list->metrics[Metrics_list->size], list, sizeof(value_list_t));
+
+    /* Allocate a new field to store the metrics value */
+    Metrics_list->metrics[Metrics_list->size].values = (value_t*)malloc(list->values_len*sizeof(value_t));
+    if(!Metrics_list->metrics[Metrics_list->size].values)
     {
-        /* Realloc the metrics list and add a new spot at the end */
-        if(!(Metrics_list->metrics = realloc(Metrics_list->metrics, (Metrics_list->size + 1)*sizeof(value_list_t))))
-           return -1;
-
-        /* Copy the new metrics in the previous new one allocated metrics */
-        memcpy(&Metrics_list->metrics[Metrics_list->size], list, sizeof(value_list_t));
-
-        /* Allocate a new field to store the metrics value */
-        Metrics_list->metrics[Metrics_list->size].values = (value_t*)malloc(list->values_len*sizeof(value_t));
-
-        /* Copy the new metrics value in the previous new one allocated metrics value */
-        memcpy(Metrics_list->metrics[Metrics_list->size].values, list->values, list->values_len*sizeof(value_t));
-
-        /* Notify the structure we have add a new metrics */
-        Metrics_list->size ++;
+      /* If something went wrong, we free the whole metrics list and notify the error */
+      metrics_deinit();
+      return -1;
     }
 
-    return 0;
+    /* Copy the new metrics value in the previous new one allocated metrics value */
+    memcpy(Metrics_list->metrics[Metrics_list->size].values, list->values, list->values_len*sizeof(value_t));
+
+    /* Notify the structure we have add a new metrics */
+    Metrics_list->size ++;
+  }
+
+  return 0;
 }
 
 /* Metrics DEINIT */
 void metrics_deinit(void)
 {
-    /* Notify the structure we want to to reset the metrics content */
-    Metrics_list->size = 0;
+  /* For each one of the metric stored in the list */
+  for(int i = 0 ; i != Metrics_list->size ; i++)
+  {
+    /* Free the metrics allocated */
+    sfree(Metrics_list->metrics[i].values);
+  }
 
-    /* Free the memory allocated */
-    free(Metrics_list->metrics);
-
-    /* Make sure the metrics list is now NULL */
-    Metrics_list->metrics = NULL;
+  /* Free the metrics list */
+  sfree(Metrics_list->metrics);
+  sfree(Metrics_list);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,24 +332,24 @@ void metrics_deinit(void)
 /* INITIALIZATION */
 int plugin_register_init(const char *name, plugin_init_cb callback)
 {
-    /* Variable definition */
-    int plugin_index;
+  /* Variable definition */
+  int plugin_index;
 
-    /* If the plugin list is NULL, we want to add a plugin object in the list with the argument name*/
-    if(!Plugin_list)
-        plugin_add(name);
+  /* If the plugin list is NULL, we want to add a plugin object in the list with the argument name*/
+  if(!Plugin_list)
+    plugin_add(name);
 
-    /* If a plugin with name do not already exist, we want to add the plugin with the argument name */
-    if(index_plugin_label(Plugin_list, name) == -1)
-        plugin_add(name);
+  /* If a plugin with name do not already exist, we want to add the plugin with the argument name */
+  if(index_plugin_label(Plugin_list, name) == -1)
+    plugin_add(name);
 
-    /* Retrieve the plugin index regarding the argument name */
-    plugin_index = index_plugin_label(Plugin_list, name);
+  /* Retrieve the plugin index regarding the argument name */
+  plugin_index = index_plugin_label(Plugin_list, name);
 
-    /* Store the address calback in our plugin list structure */
-    memcpy(&Plugin_list->plugin[plugin_index].init, &callback, sizeof(plugin_init_cb));
+  /* Store the address calback in our plugin list structure */
+  memcpy(&Plugin_list->plugin[plugin_index].init, &callback, sizeof(plugin_init_cb));
 
-    return 0;
+  return 0;
 }
 
 /* CONFIGURATION */
@@ -294,48 +358,49 @@ int plugin_register_config(const char *name,
                                           const char *val),
                           const char **keys, int keys_num)
 {
-    /* Variable definition */
-    int plugin_index;
+  /* Variable definition */
+  int plugin_index;
 
-    /* If the plugin list is NULL, we want to add a plugin object in the list with the argument name */
-    if(!Plugin_list)
-        plugin_add(name);
+  /* If the plugin list is NULL, we want to add a plugin object in the list with the argument name */
+  if(!Plugin_list)
+    plugin_add(name);
 
-    /* If a plugin with name do not already exist, we want to add the plugin with the argument name */
-    if(index_plugin_label(Plugin_list, name) == -1)
-        plugin_add(name);
+  /* If a plugin with name do not already exist, we want to add the plugin with the argument name */
+  if(index_plugin_label(Plugin_list, name) == -1)
+    plugin_add(name);
 
-    /* Retrieve the plugin index regarding the argument name */
-    plugin_index = index_plugin_label(Plugin_list, name);
+  /* Retrieve the plugin index regarding the argument name */
+  plugin_index = index_plugin_label(Plugin_list, name);
 
-    /* Store the address calback in our plugin list structure */
-    memcpy(&Plugin_list->plugin[plugin_index].config, &callback, sizeof(plugin_config_cb));
-    return 0;
+  /* Store the address calback in our plugin list structure */
+  memcpy(&Plugin_list->plugin[plugin_index].config, &callback, sizeof(plugin_config_cb));
+  return 0;
 }
 
 /* COMPLEX CONFIG */
 int plugin_register_complex_config(const char *type,
                                           int (*callback)(oconfig_item_t *))
 {
-     /* Variable definition */
-    int plugin_index;
+  /* Variable definition */
+  int plugin_index;
 
-    /* If the plugin list is NULL, we want to add a plugin object in the list with the argument name */
-    if(!Plugin_list)
-        plugin_add(type);
+  /* If the plugin list is NULL, we want to add a plugin object in the list with the argument name */
+  if(!Plugin_list)
+    plugin_add(type);
 
-    /* If a plugin with name do not already exist, we want to add the plugin with the argument name */
-    if(index_plugin_label(Plugin_list, type) == -1)
-        plugin_add(type);
+  /* If a plugin with name do not already exist, we want to add the plugin with the argument name */
+  if(index_plugin_label(Plugin_list, type) == -1)
+    plugin_add(type);
 
-    /* Retrieve the plugin index regarding the argument name */
-    plugin_index = index_plugin_label(Plugin_list, type);
+  /* Retrieve the plugin index regarding the argument name */
+  plugin_index = index_plugin_label(Plugin_list, type);
 
-    /* Store the address calback in our plugin list structure */
-    memcpy(&Plugin_list->plugin[plugin_index].complex_config, &callback, sizeof(plugin_complex_config_cb));
-    return 0;
+  /* Store the address calback in our plugin list structure */
+  memcpy(&Plugin_list->plugin[plugin_index].complex_config, &callback, sizeof(plugin_complex_config_cb));
+  return 0;
 }
 
+/* LOG */
 void plugin_log(int level, char const *format, ...)
 {
   char buffer[1024];
@@ -346,6 +411,25 @@ void plugin_log(int level, char const *format, ...)
   va_end(ap);
 
   printf("plugin_log (%i, \"%s\");\n", level, buffer);
+}
+
+/* Mock context */
+plugin_ctx_t mock_context = {.interval = TIME_T_TO_CDTIME_T_STATIC(10),};
+
+/* Plugin GET CONTEXT */
+plugin_ctx_t plugin_get_ctx(void)
+{
+  return mock_context;
+}
+
+/* LIST FREE */
+void plugin_value_list_free(value_list_t *vl)
+{
+  if (vl == NULL)
+    return;
+
+  sfree(vl->values);
+  sfree(vl);
 }
 
 /* DISPATCH VALUES */
@@ -368,51 +452,43 @@ int plugin_dispatch_values(value_list_t const *vl)
 
   /* We want to add in our metrics list the argument vl */
   if(metrics_add(tmp_vl))
-      return -1;
-
-  return 0;
-}
-
-/* LIST FREE */
-void plugin_value_list_free(value_list_t *vl)
-{
-  if (vl == NULL)
   {
-      return;
+    /* Erase the temporary value list previously allocated */
+    plugin_value_list_free(tmp_vl);
+    return -1;
   }
 
-  sfree(vl->values);
-  sfree(vl);
+  return 0;
 }
 
 /* LIST CLONE */
 value_list_t *plugin_value_list_clone(value_list_t const *vl_orig)
 {
-    value_list_t *vl;
+  value_list_t *vl;
 
-    if (vl_orig == NULL)
-        return NULL;
+  if (vl_orig == NULL)
+    return NULL;
 
-    vl = malloc(sizeof(*vl));
-    if (vl == NULL)
-        return NULL;
+  vl = malloc(sizeof(*vl));
+  if (vl == NULL)
+    return NULL;
 
-    memcpy(vl, vl_orig, sizeof(*vl));
+  memcpy(vl, vl_orig, sizeof(*vl));
 
-    if (vl->host[0] == 0)
-        sstrncpy(vl->host, hostname, sizeof(vl->host));
+  if (vl->host[0] == 0)
+    sstrncpy(vl->host, hostname, sizeof(vl->host));
 
-    vl->values = calloc(vl_orig->values_len, sizeof(*vl->values));
-    if (vl->values == NULL)
-    {
-        plugin_value_list_free(vl);
-        return NULL;
-    }
+  vl->values = calloc(vl_orig->values_len, sizeof(*vl->values));
+  if (vl->values == NULL)
+  {
+      plugin_value_list_free(vl);
+      return NULL;
+  }
 
-    memcpy(vl->values, vl_orig->values, vl_orig->values_len * sizeof(*vl->values));
+  memcpy(vl->values, vl_orig->values, vl_orig->values_len * sizeof(*vl->values));
 
-    if (vl->time == 0)
-        vl->time = cdtime();
+  if (vl->time == 0)
+    vl->time = cdtime();
 
   return vl;
 }
@@ -421,111 +497,113 @@ value_list_t *plugin_value_list_clone(value_list_t const *vl_orig)
 __attribute__((sentinel)) int plugin_dispatch_multivalue(value_list_t const *template,
                            bool store_percentage, int store_type, ...)
 {
-    value_list_t *vl;
-    int failed = 0;
-    gauge_t sum = 0.0;
-    va_list ap;
+  value_list_t *vl;
+  int failed = 0;
+  gauge_t sum = 0.0;
+  va_list ap;
 
-    assert(template->values_len == 1);
+  assert(template->values_len == 1);
 
-    /* Calculate sum for Gauge to calculate percent if needed */
-    if (DS_TYPE_GAUGE == store_type) {
-        va_start(ap, store_type);
-        while (42) {
-            char const *name;
-            gauge_t value;
-
-            name = va_arg(ap, char const *);
-            if (name == NULL)
-                break;
-
-            value = va_arg(ap, gauge_t);
-            if (!isnan(value))
-                sum += value;
-        }
-
-        va_end(ap);
-    }
-
-    vl = plugin_value_list_clone(template);
-    /* plugin_value_list_clone makes sure vl->time is set to non-zero. */
-    if (store_percentage)
-        sstrncpy(vl->type, "percent", sizeof(vl->type));
-
+  /* Calculate sum for Gauge to calculate percent if needed */
+  if (DS_TYPE_GAUGE == store_type) {
     va_start(ap, store_type);
-    while (42) {
-        char const *name;
+    while (42)
+    {
+      char const *name;
+      gauge_t value;
 
-        /* Set the type instance. */
-        name = va_arg(ap, char const *);
-        if(name == NULL)
-            break;
+      name = va_arg(ap, char const *);
+      if (name == NULL)
+        break;
 
-        sstrncpy(vl->type_instance, name, sizeof(vl->type_instance));
-
-        /* Set the value. */
-        switch (store_type)
-        {
-            case DS_TYPE_GAUGE:
-            {
-                vl->values[0].gauge = va_arg(ap, gauge_t);
-                if (store_percentage)
-                    vl->values[0].gauge *= sum ? (100.0 / sum) : NAN;
-                break;
-            }
-
-            case DS_TYPE_ABSOLUTE:
-            {
-                vl->values[0].absolute = va_arg(ap, absolute_t);
-                break;
-            }
-
-            case DS_TYPE_COUNTER:
-            {
-                vl->values[0].counter = va_arg(ap, counter_t);
-                break;
-            }
-
-            case DS_TYPE_DERIVE:
-            {
-                vl->values[0].derive = va_arg(ap, derive_t);
-                break;
-            }
-
-            default:
-                failed++;
-        }
-
-        if(!plugin_dispatch_values(vl))
-            failed++;
+      value = va_arg(ap, gauge_t);
+      if (!isnan(value))
+        sum += value;
     }
 
     va_end(ap);
-    plugin_value_list_free(vl);
-    return failed;
+  }
+
+  vl = plugin_value_list_clone(template);
+  /* plugin_value_list_clone makes sure vl->time is set to non-zero. */
+  if (store_percentage)
+    sstrncpy(vl->type, "percent", sizeof(vl->type));
+
+  va_start(ap, store_type);
+  while (42)
+  {
+    char const *name;
+
+    /* Set the type instance. */
+    name = va_arg(ap, char const *);
+    if(name == NULL)
+      break;
+
+    sstrncpy(vl->type_instance, name, sizeof(vl->type_instance));
+
+    /* Set the value. */
+    switch (store_type)
+    {
+      case DS_TYPE_GAUGE:
+      {
+        vl->values[0].gauge = va_arg(ap, gauge_t);
+        if (store_percentage)
+          vl->values[0].gauge *= sum ? (100.0 / sum) : NAN;
+        break;
+      }
+
+      case DS_TYPE_ABSOLUTE:
+      {
+        vl->values[0].absolute = va_arg(ap, absolute_t);
+        break;
+      }
+
+      case DS_TYPE_COUNTER:
+      {
+        vl->values[0].counter = va_arg(ap, counter_t);
+        break;
+      }
+
+      case DS_TYPE_DERIVE:
+      {
+        vl->values[0].derive = va_arg(ap, derive_t);
+        break;
+      }
+
+      default:
+        failed++;
+    }
+
+    if(!plugin_dispatch_values(vl))
+      failed++;
+  }
+
+  va_end(ap);
+  plugin_value_list_free(vl);
+  return failed;
 }
 
 /* READ */
 int plugin_register_read(const char *name, int (*callback)(void))
 {
-    /* Variable definition */
-    int plugin_index;
+  /* Variable definition */
+  int plugin_index;
 
-    /* If the plugin list is NULL, we want to add a plugin object in the list with the argument name */
-    if(!Plugin_list)
-        plugin_add(name);
+  /* If the plugin list is NULL, we want to add a plugin object in the list with the argument name */
+  if(!Plugin_list)
+    plugin_add(name);
 
-    /* If a plugin with name do not already exist, we want to add the plugin with the argument name */
-    if(index_plugin_label(Plugin_list, name) == -1)
-        plugin_add(name);
+  /* If a plugin with name do not already exist, we want to add the plugin with the argument name */
+  if(index_plugin_label(Plugin_list, name) == -1)
+    plugin_add(name);
 
-    /* Retrieve the plugin index regarding the argument name */
-    plugin_index = index_plugin_label(Plugin_list, name);
+  /* Retrieve the plugin index regarding the argument name */
+  plugin_index = index_plugin_label(Plugin_list, name);
 
-    /* Store the address calback in our plugin list structure */
-    memcpy(&Plugin_list->plugin[plugin_index].read, &callback, sizeof(plugin_read_cb));
+  /* Store the address calback in our plugin list structure */
+  memcpy(&Plugin_list->plugin[plugin_index].read, &callback, sizeof(plugin_read_cb));
 
-    return 0;
+  return 0;
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -535,9 +613,9 @@ int plugin_register_read(const char *name, int (*callback)(void))
 /* sstrncpy */
 char *sstrncpy(char *dest, const char *src, size_t n)
 {
-    strncpy(dest, src, n);
-    dest[n - 1] = '\0';
-    return dest;
+  strncpy(dest, src, n);
+  dest[n - 1] = '\0';
+  return dest;
 }
 
 /* value_to_rate */
@@ -545,107 +623,92 @@ int value_to_rate(gauge_t *ret_rate,
                   value_t value, int ds_type, cdtime_t t,
                   value_to_rate_state_t *state)
 {
-    gauge_t interval;
+  gauge_t interval;
 
-    if (t <= state->last_time) {
-        memset(state, 0, sizeof(*state));
-        return EINVAL;
-    }
+  if (t <= state->last_time) {
+    memset(state, 0, sizeof(*state));
+    return EINVAL;
+  }
 
-    interval = CDTIME_T_TO_DOUBLE(t - state->last_time);
+  interval = CDTIME_T_TO_DOUBLE(t - state->last_time);
 
-    if (state->last_time == 0) {
-        state->last_value = value;
-        state->last_time = t;
-        return EAGAIN;
-    }
-
-    switch (ds_type)
-    {
-
-        case DS_TYPE_DERIVE:
-        {
-            derive_t diff = value.derive - state->last_value.derive;
-            *ret_rate = ((gauge_t)diff) / ((gauge_t)interval);
-            break;
-        }
-
-        case DS_TYPE_GAUGE:
-        {
-            *ret_rate = value.gauge;
-            break;
-        }
-
-        case DS_TYPE_COUNTER:
-        {
-            counter_t diff = counter_diff(state->last_value.counter, value.counter);
-            *ret_rate = ((gauge_t)diff) / ((gauge_t)interval);
-            break;
-        }
-
-        case DS_TYPE_ABSOLUTE:
-        {
-            absolute_t diff = value.absolute;
-            *ret_rate = ((gauge_t)diff) / ((gauge_t)interval);
-            break;
-        }
-
-        default:
-        {
-            return EINVAL;
-        }
-    }
-
+  if (state->last_time == 0) {
     state->last_value = value;
     state->last_time = t;
-    return 0;
+    return EAGAIN;
+  }
+
+  switch (ds_type)
+  {
+    case DS_TYPE_DERIVE:
+    {
+      derive_t diff = value.derive - state->last_value.derive;
+      *ret_rate = ((gauge_t)diff) / ((gauge_t)interval);
+      break;
+    }
+
+    case DS_TYPE_GAUGE:
+    {
+      *ret_rate = value.gauge;
+      break;
+    }
+
+    case DS_TYPE_COUNTER:
+    {
+      counter_t diff = counter_diff(state->last_value.counter, value.counter);
+      *ret_rate = ((gauge_t)diff) / ((gauge_t)interval);
+      break;
+    }
+
+    case DS_TYPE_ABSOLUTE:
+    {
+      absolute_t diff = value.absolute;
+      *ret_rate = ((gauge_t)diff) / ((gauge_t)interval);
+      break;
+    }
+
+    default:
+    {
+      return EINVAL;
+    }
+  }
+
+  state->last_value = value;
+  state->last_time = t;
+  return 0;
 }
 
 /* cdtime */
 cdtime_t cdtime(void)
 {
-    int status;
-    struct timespec ts = {0, 0};
+  int status;
+  struct timespec ts = {0, 0};
 
-    status = clock_gettime(CLOCK_REALTIME, &ts);
-    if (status != 0) {
-        return 0;
-    }
-    return TIMESPEC_TO_CDTIME_T(&ts);
-}
-
-/* sstrerror */
-char *sstrerror(int errnum, char *buf, size_t buflen)
-{
-    char *temp;
-
-    pthread_mutex_lock(&strerror_r_lock);
-
-    temp = strerror(errnum);
-    sstrncpy(buf, temp, buflen);
-
-    pthread_mutex_unlock(&strerror_r_lock);
-    return buf;
+  status = clock_gettime(CLOCK_REALTIME, &ts);
+  if (status != 0) {
+    return 0;
+  }
+  return TIMESPEC_TO_CDTIME_T(&ts);
 }
 
 /* strsplit */
 int strsplit(char *string, char **fields, size_t size)
 {
-    size_t i;
-    char *ptr;
-    char *saveptr;
+  size_t i;
+  char *ptr;
+  char *saveptr;
 
-    i = 0;
-    ptr = string;
-    saveptr = NULL;
-    while ((fields[i] = strtok_r(ptr, " \t\r\n", &saveptr)) != NULL) {
-        ptr = NULL;
-        i++;
+  i = 0;
+  ptr = string;
+  saveptr = NULL;
+  while ((fields[i] = strtok_r(ptr, " \t\r\n", &saveptr)) != NULL) {
+    ptr = NULL;
+    i++;
 
-        if (i >= size)
-        break;
-    }
-    return (int)i;
+    if (i >= size)
+      break;
+  }
+  return (int)i;
 }
 
 /* read file contents */
@@ -682,12 +745,6 @@ void daemon_log(int level, const char *format, ...) {
 
   plugin_log(level, "%s plugin: %s", name, msg);
 }
-
-plugin_ctx_t mock_context = {
-    .interval = TIME_T_TO_CDTIME_T_STATIC(10),
-};
-
-plugin_ctx_t plugin_get_ctx(void) { return mock_context; }
 
 int parse_value(const char *value_orig, value_t *ret_value, int ds_type) {
   char *value;
@@ -744,63 +801,55 @@ int parse_value(const char *value_orig, value_t *ret_value, int ds_type) {
   return 0;
 }
 
+
 /* counter_diff */
 counter_t counter_diff(counter_t old_value, counter_t new_value)
 {
-    counter_t diff;
-    if (old_value > new_value) {
-        if (old_value <= 4294967295U)
-        diff = (4294967295U - old_value) + new_value + 1;
-        else
-        diff = (18446744073709551615ULL - old_value) + new_value + 1;
-    } else {
-        diff = new_value - old_value;
-    }
-    return diff;
-}
+  counter_t diff;
+  if (old_value > new_value) {
+    if (old_value <= 4294967295U)
+      diff = (4294967295U - old_value) + new_value + 1;
+    else
+      diff = (18446744073709551615ULL - old_value) + new_value + 1;
+  }
+  else
+      diff = new_value - old_value;
 
-/* max_size */
-size_t max_size(size_t a, size_t b)
-{
-    if(a >= b)
-    {
-        return a;
-    }
-    return b;
+  return diff;
 }
 
 /* cf_util_get_boolean */
 int cf_util_get_boolean(const oconfig_item_t *ci, bool *ret_bool)
 {
-    if ((ci == NULL) || (ret_bool == NULL))
-        return EINVAL;
+  if ((ci == NULL) || (ret_bool == NULL))
+    return EINVAL;
 
-    if ((ci->values_num != 1) || ((ci->values[0].type != OCONFIG_TYPE_BOOLEAN) &&
-                                (ci->values[0].type != OCONFIG_TYPE_STRING)))
+  if ((ci->values_num != 1) || ((ci->values[0].type != OCONFIG_TYPE_BOOLEAN) &&
+                              (ci->values[0].type != OCONFIG_TYPE_STRING)))
+    return -1;
+
+  switch (ci->values[0].type)
+  {
+    case OCONFIG_TYPE_BOOLEAN:
+    {
+      *ret_bool = ci->values[0].value.boolean ? true : false;
+      break;
+    }
+
+    case OCONFIG_TYPE_STRING:
+    {
+      if(IS_TRUE(ci->values[0].value.string))
+        *ret_bool = true;
+
+      else if(IS_FALSE(ci->values[0].value.string))
+        *ret_bool = false;
+
+      else
         return -1;
 
-    switch (ci->values[0].type)
-    {
-        case OCONFIG_TYPE_BOOLEAN:
-        {
-            *ret_bool = ci->values[0].value.boolean ? true : false;
-            break;
-        }
-
-        case OCONFIG_TYPE_STRING:
-        {
-            if(IS_TRUE(ci->values[0].value.string))
-                *ret_bool = true;
-
-            else if(IS_FALSE(ci->values[0].value.string))
-                *ret_bool = false;
-
-            else
-                return -1;
-
-            break;
-        }
+      break;
     }
+  }
 
   return 0;
 }

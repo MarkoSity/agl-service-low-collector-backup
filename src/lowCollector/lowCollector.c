@@ -138,7 +138,7 @@ static void afb_reset(afb_req_t req)
 static int initialization(afb_api_t api)
 {
     AFB_API_NOTICE(api, "Initialization");
-    
+
     /* Userdata declaration */
     userdata_t *userdata;
 
