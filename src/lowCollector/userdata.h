@@ -22,6 +22,40 @@
 #define USERDATA_H
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            GLOBAL CHAR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
+/* Useful function */
+#define MAX_SIZE_CHAR "max_size"
+#define INDEX_PLUGIN_LABEL_CHAR "index_plugin_label"
+
+/* Global variable */
+#define PLUGIN_LIST_CHAR "Plugin_list"
+#define METRICS_LIST_CHAR "Metrics_list"
+
+/* Function related to the global variable */
+#define PLUGIN_DEINIT_CHAR "plugin_deinit"
+#define METRICS_DEINIT_CHAR "metrics_deinit"
+
+/* Module register function */
+#define MODULE_REGISTER_CHAR "module_register"
+
+/* Plugin */
+#define PLUGIN_CHAR "plugin"
+
+/* Plugin cpu */
+#define CPU_CHAR "cpu"
+
+/* Plugin memory */
+#define MEMORY_CHAR "memory"
+
+/* Plugin processes */
+#define PROCESSES_CHAR "processes"
+
+/* Plugin processes */
+#define PROCESSES_CHAR "processes"
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             USERDATA STRUCTURE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 

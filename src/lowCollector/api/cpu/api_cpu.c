@@ -47,22 +47,22 @@ json_object *api_cpu_init(userdata_t *userdata)
   }
 
   /* Retrieve the global variable plugin list from the collectd glue library */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
-  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, "index_plugin_label");
+  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, INDEX_PLUGIN_LABEL_CHAR);
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
   /* Load the module register symbol */
-  module_register = (module_register_t)dlsym(userdata->handle_cpu, "module_register");
+  module_register = (module_register_t)dlsym(userdata->handle_cpu, MODULE_REGISTER_CHAR);
   if(!module_register)
     return json_object_new_string(dlerror());
 
   /* First let's check if a plugin with the cpu name already exists */
-    if((*Index_plugin_label)(*plugin_list, "cpu") != -1)
+    if((*Index_plugin_label)(*plugin_list, CPU_CHAR) != -1)
       return json_object_new_string("Plugin already stored");
 
   /* Call the module register function to create the plugin and store its callbacks */
@@ -83,17 +83,17 @@ json_object *api_cpu_config_mean(userdata_t *userdata, int plugin_index)
   metrics_deinit_t Metrics_deinit;
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global variable metrics list */
-  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
   if(!metrics_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, METRICS_DEINIT_CHAR);
   if(!Metrics_deinit)
     return json_object_new_string(dlerror());
 
@@ -121,17 +121,17 @@ json_object *api_cpu_config_mean_cpu(userdata_t *userdata, int plugin_index)
   metrics_deinit_t Metrics_deinit;
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global variable metrics list */
-  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
   if(!metrics_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, METRICS_DEINIT_CHAR);
   if(!Metrics_deinit)
     return json_object_new_string(dlerror());
 
@@ -159,17 +159,17 @@ json_object *api_cpu_config_mean_state(userdata_t *userdata, int plugin_index)
   metrics_deinit_t Metrics_deinit;
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global variable metrics list */
-  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
   if(!metrics_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, METRICS_DEINIT_CHAR);
   if(!Metrics_deinit)
     return json_object_new_string(dlerror());
 
@@ -197,17 +197,17 @@ json_object *api_cpu_config_percent_state_cpu(userdata_t *userdata, int plugin_i
   metrics_deinit_t Metrics_deinit;
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global variable metrics list */
-  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
   if(!metrics_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, METRICS_DEINIT_CHAR);
   if(!Metrics_deinit)
     return json_object_new_string(dlerror());
 
@@ -235,17 +235,17 @@ json_object *api_cpu_config_jiffies_state_cpu(userdata_t *userdata, int plugin_i
   metrics_deinit_t Metrics_deinit;
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global variable metrics list */
-  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
   if(!metrics_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, METRICS_DEINIT_CHAR);
   if(!Metrics_deinit)
     return json_object_new_string(dlerror());
 
@@ -273,15 +273,15 @@ json_object *api_cpu_config_number_cpu(userdata_t *userdata, int plugin_index)
   metrics_deinit_t Metrics_deinit;
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
-  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
   if(!metrics_list)
     return json_object_new_string(dlerror());
 
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, METRICS_DEINIT_CHAR);
   if(!Metrics_deinit)
     return json_object_new_string(dlerror());
 
@@ -317,17 +317,17 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
     return json_object_new_string("The cpu plugin has not been initialized");
 
   /* Retrieve the max_size function */
-  Max_size = (max_size_t)dlsym(userdata->handle_collectd, "max_size");
+  Max_size = (max_size_t)dlsym(userdata->handle_collectd, MAX_SIZE_CHAR);
   if(!Max_size)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
-  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, "index_plugin_label");
+  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, INDEX_PLUGIN_LABEL_CHAR);
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
   /* Retrieve the plugin list variable */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
@@ -336,7 +336,7 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
     return json_object_new_string("Plugin list is null.");
 
   /* First, let's ensure the list has a cpu plugin initialize */
-  plugin_index = (*Index_plugin_label)(*plugin_list, "cpu");
+  plugin_index = (*Index_plugin_label)(*plugin_list, CPU_CHAR);
   if(plugin_index == -1)
     return json_object_new_string("Plugin not initialized.");
 
@@ -410,32 +410,32 @@ json_object *api_cpu_read(userdata_t *userdata)
   res = json_object_new_object();
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global variable metrics list */
-  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
   if(!metrics_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, METRICS_DEINIT_CHAR);
   if(!Metrics_deinit)
     return json_object_new_string(dlerror());
 
   /* Retrieve the max size function */
-  Max_size = (max_size_t)dlsym(userdata->handle_collectd, "max_size");
+  Max_size = (max_size_t)dlsym(userdata->handle_collectd, MAX_SIZE_CHAR);
   if(!Max_size)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
-  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, "index_plugin_label");
+  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, INDEX_PLUGIN_LABEL_CHAR);
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
   /* Ensure a plugin named cpu is stored and retrieve its index */
-  plugin_index = (*Index_plugin_label)(*plugin_list, "cpu");
+  plugin_index = (*Index_plugin_label)(*plugin_list, CPU_CHAR);
   if(plugin_index == -1)
     return json_object_new_string("The cpu plugin is not registered.");
 
@@ -465,17 +465,17 @@ json_object *api_cpu_reset(userdata_t *userdata)
   index_plugin_label_t Index_plugin_label;
 
   /* Retrieve the global plugin list variable */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the plugin deinit function */
-  Plugin_deinit = (plugin_deinit_t)dlsym(userdata->handle_collectd, "plugin_deinit");
+  Plugin_deinit = (plugin_deinit_t)dlsym(userdata->handle_collectd, PLUGIN_DEINIT_CHAR);
   if(!Plugin_deinit)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
-  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, "index_plugin_label");
+  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, INDEX_PLUGIN_LABEL_CHAR);
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
@@ -484,11 +484,11 @@ json_object *api_cpu_reset(userdata_t *userdata)
     return json_object_new_string("The cpu plugin is not registered.");
 
   /* Ensure the cpu plugin is registered in the plugin list */
-  if((*Index_plugin_label)(*plugin_list, "cpu") == -1)
+  if((*Index_plugin_label)(*plugin_list, CPU_CHAR) == -1)
     return json_object_new_string("The cpu plugin is not loaded.");
 
   /* Retrieve the index of the cpu plugin */
-  plugin_index = (*Index_plugin_label)(*plugin_list, "cpu");
+  plugin_index = (*Index_plugin_label)(*plugin_list, CPU_CHAR);
 
   /* Delete the cpu plugin from the list */
   if((*Plugin_deinit)(plugin_index))
