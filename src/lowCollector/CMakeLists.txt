@@ -1,5 +1,5 @@
 ###########################################################################
-# Copyright 2015, 2016, 2017 IoT.bzh
+# Copyright (C) 2016-2019 "IoT.bzh"
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ PROJECT_TARGET_ADD(lowCollector)
   set(SRC_LOWCOLLECTOR
     "lowCollector.c"
   )
-  
+
   set(SRC_API_WRITE_JSON
     "write/write_json.c"
 	)
@@ -28,15 +28,15 @@ PROJECT_TARGET_ADD(lowCollector)
 	set(SRC_API
     "api/api.c"
   )
-  
+
   set(SRC_API_CPU
     "api/cpu/api_cpu.c"
   )
-  
+
   set(SRC_API_MEMORY
     "api/memory/api_memory.c"
   )
-  
+
   set(SRC_API_PROCESSES
     "api/processes/api_processes.c"
   )
