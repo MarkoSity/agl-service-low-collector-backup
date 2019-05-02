@@ -82,7 +82,7 @@ json_object *write_json(metrics_list_t *metrics_list)
         /* If the metrics do not have a type instance */
         if(!strncmp(metrics_list->metrics[i].type_instance, "", strlen(metrics_list->metrics[i].type_instance)))
           json_object_object_add(type_instance, metrics_list->metrics[i].plugin, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
-        
+
         /* Pack the metrics value with it type instance associated */
         else
           json_object_object_add(type_instance, metrics_list->metrics[i].type_instance, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
@@ -114,15 +114,14 @@ json_object *write_json(metrics_list_t *metrics_list)
       /* While the type do not change */
       while(!strncmp(type_label, metrics_list->metrics[i].type, max_size(strlen(type_label), strlen(metrics_list->metrics[i].type))))
       {
-        printf("name : %s, value : %f\n", metrics_list->metrics[i].type_instance, metrics_list->metrics[i].values->gauge);
         /* If the metrics do not have a type instance */
         if(!strncmp(metrics_list->metrics[i].type_instance, "", strlen(metrics_list->metrics[i].type_instance)))
           json_object_object_add(type_instance, metrics_list->metrics[i].plugin, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
-        
+
         /* Pack the metrics value with it type instance associated */
         else
           json_object_object_add(type_instance, metrics_list->metrics[i].type_instance, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
-        
+
         i++;
       }
 
