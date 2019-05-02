@@ -192,13 +192,9 @@ json_object *api_memory_config(userdata_t *userdata, json_object *args)
   /* Variable definition */
   int plugin_index;
   json_type args_type;
-  char *config_label;
   max_size_t Max_size;
   index_plugin_label_t Index_plugin_label;
   plugin_list_t **plugin_list;
-
-  /* Variable allocation */
-  config_label = (char*)malloc(sizeof(char));
 
   /* Ensure the memory library is open */
   if(!userdata->handle_memory)
@@ -233,26 +229,25 @@ json_object *api_memory_config(userdata_t *userdata, json_object *args)
   if(args_type != json_type_string)
     return json_object_new_string("Fail to recognize arguments type (string).");
 
-  /* Retrieve the configuration in a string */
-  config_label = (char*)json_object_get_string(args);
-
   /* Launch the memory init callack */
   if((*plugin_list)->plugin[plugin_index].init())
     return json_object_new_string("Fail to initialize the memory plugin.");
 
   /* Absolute configuration case */
-  if(!strncmp(config_label, "absolute", (*Max_size)((size_t) 8, strlen(config_label))))
-    return api_mem_config_absolute(userdata, plugin_index);
+  if(!strncmp(json_object_get_string(args), "absolute", (*Max_size)(strlen("absolute"), strlen(json_object_get_string(args)))))
+   return api_mem_config_absolute(userdata, plugin_index);
 
   /* Percentage configuration case */
-  else if(!strncmp(config_label, "percent", (*Max_size)((size_t) 7, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), "percent", (*Max_size)(strlen("percent"), strlen(json_object_get_string(args)))))
     return api_mem_config_percent(userdata, plugin_index);
 
   /* All configuration case */
-  else if(!strncmp(config_label, "all", (*Max_size)((size_t) 7, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), "all", (*Max_size)(strlen("all"), strlen(json_object_get_string(args)))))
     return api_mem_config_all(userdata, plugin_index);
 
-  return json_object_new_string("Unknown configuration.");
+  /* Uknown configuration */
+  else
+    return json_object_new_string("Unknown configuration.");
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

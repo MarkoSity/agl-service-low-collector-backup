@@ -45,6 +45,12 @@
 
 /* Plugin cpu */
 #define CPU_CHAR "cpu"
+#define CPU_MEAN_CHAR "mean"
+#define CPU_MEAN_STATE_CHAR "mean_state"
+#define CPU_MEAN_CPU_CHAR "mean_cpu"
+#define CPU_JIFFIES_STATE_CPU_CHAR "jiffies_state_cpu"
+#define CPU_PERCENT_STATE_CPU_CHAR "percent_state_cpu"
+#define CPU_NUMBER_CHAR "number"
 
 /* Plugin memory */
 #define MEMORY_CHAR "memory"

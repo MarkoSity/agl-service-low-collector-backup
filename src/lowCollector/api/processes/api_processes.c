@@ -210,13 +210,9 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
   /* Variable definition */
   int plugin_index;
   json_type args_type;
-  char *config_label;
   max_size_t Max_size;
   index_plugin_label_t Index_plugin_label;
   plugin_list_t **plugin_list;
-
-  /* Variable allocation */
-  config_label = (char*)malloc(sizeof(char));
 
   /* Ensure the processes library is open */
   if(!userdata->handle_processes)
@@ -251,26 +247,27 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
   if(args_type != json_type_string)
     return json_object_new_string("Fail to recognize arguments type (string).");
 
-  /* Retrieve the configuration in a string */
-  config_label = (char*)json_object_get_string(args);
-
-  /* Launch the memory init callack */
+  /* Launch the processes init callack */
   if((*plugin_list)->plugin[plugin_index].init())
     return json_object_new_string("Fail to initialize the processes plugin.");
 
   /* Context configuration case */
-  if(!strncmp(config_label, "context", (*Max_size)((size_t) 7, strlen(config_label))))
+  if(!strncmp(json_object_get_string(args), "context", (*Max_size)(strlen("context"), strlen(json_object_get_string(args)))))
     return api_processes_config_context(userdata, plugin_index);
 
   /* File configuration case */
-  else if(!strncmp(config_label, "file", (*Max_size)((size_t) 4, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), "file", (*Max_size)(strlen("file"), strlen(json_object_get_string(args)))))
     return api_processes_config_file(userdata, plugin_index);
 
   /* Memory configuration case */
-  else if(!strncmp(config_label, "memory", (*Max_size)((size_t) 8, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), "memory", (*Max_size)(strlen("memory"), strlen(json_object_get_string(args)))))
     return api_processes_config_memory(userdata, plugin_index);
 
-  return json_object_new_string("Unknown configuration.");
+  /* Unknown configuration */
+  else
+  {
+    return json_object_new_string("Unknown configuration.");
+  }
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -306,8 +306,6 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
   /* Variable definition */
   int plugin_index;
   json_type args_type;
-  char *config_label;
-  int label_size;
   max_size_t Max_size;
   index_plugin_label_t Index_plugin_label;
   plugin_list_t **plugin_list;
@@ -345,44 +343,35 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
   if(args_type != json_type_string)
     return json_object_new_string("Fail to recognize arguments type (string).");
 
-  /* Retrieve the configuration in a string */
-  label_size = json_object_get_string_len(args);
-  config_label = (char *)malloc(label_size*sizeof(char)+1);
-  if(!config_label)
-    return json_object_new_string("Fail to allocate memory.");
-
-  config_label = (char*)json_object_get_string(args);
-
   /* Initialize the cpu plugin */
    if((*plugin_list)->plugin[plugin_index].init())
-   {
      return json_object_new_string("Fail to initialize cpu plugin.");
-   }
 
   /* Mean configuration case */
-  if(!strncmp(config_label, "mean", (*Max_size)((size_t) 8, strlen(config_label))))
+  if(!strncmp(json_object_get_string(args), CPU_MEAN_CHAR, (*Max_size)(strlen(CPU_MEAN_CHAR), strlen(json_object_get_string(args)))))
     return api_cpu_config_mean(userdata, plugin_index);
 
   /* Mean cpu configuration case */
-  else if(!strncmp(config_label, "mean_cpu", (*Max_size)((size_t) 8, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), CPU_MEAN_CPU_CHAR, (*Max_size)(strlen(CPU_MEAN_CPU_CHAR), strlen(json_object_get_string(args)))))
     return api_cpu_config_mean_cpu(userdata, plugin_index);
 
   /* Mean state configuration case */
-  else if(!strncmp(config_label, "mean_state", (*Max_size)((size_t) 8, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), CPU_MEAN_STATE_CHAR, (*Max_size)(strlen(CPU_MEAN_STATE_CHAR), strlen(json_object_get_string(args)))))
     return api_cpu_config_mean_state(userdata, plugin_index);
 
   /* Percent state cpu configuration case */
-  else if(!strncmp(config_label, "percent_state_cpu", (*Max_size)((size_t) 8, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), CPU_PERCENT_STATE_CPU_CHAR, (*Max_size)(strlen(CPU_PERCENT_STATE_CPU_CHAR), strlen(json_object_get_string(args)))))
     return api_cpu_config_percent_state_cpu(userdata, plugin_index);
 
   /* Jiffies state cpu configuration case */
-  else if(!strncmp(config_label, "jiffies_state_cpu", (*Max_size)((size_t) 8, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), CPU_JIFFIES_STATE_CPU_CHAR, (*Max_size)(strlen(CPU_JIFFIES_STATE_CPU_CHAR), strlen(json_object_get_string(args)))))
     return api_cpu_config_jiffies_state_cpu(userdata, plugin_index);
 
   /* Number configuration case */
-  else if(!strncmp(config_label, "number", (*Max_size)((size_t) 8, strlen(config_label))))
+  else if(!strncmp(json_object_get_string(args), CPU_NUMBER_CHAR, (*Max_size)(strlen(CPU_NUMBER_CHAR), strlen(json_object_get_string(args)))))
     return api_cpu_config_number_cpu(userdata, plugin_index);
 
+  /* Unknown configuration */
   else
     return json_object_new_string("Unknown configuration.");
 }

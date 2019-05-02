@@ -105,7 +105,6 @@ json_object *write_json(metrics_list_t *metrics_list)
     {
       /* Json allocation due to json_object_object_add which destroy the json sources */
       type_instance = json_object_new_object();
-      type = json_object_new_object();
 
       /* Let's store the type label in a string */
       type_label = malloc(strlen(metrics_list->metrics[i].type)*sizeof(char));
@@ -139,6 +138,8 @@ json_object *write_json(metrics_list_t *metrics_list)
   /* Add the name of the plugin as a key to these variables */
   json_object_object_add(res_plugin, metrics_list->metrics->plugin, plugin_instance);
 
+  /* Add the host to the final response */
   json_object_object_add(res, metrics_list->metrics->host, res_plugin);
+
   return res;
 }
