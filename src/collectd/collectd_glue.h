@@ -21,7 +21,7 @@
 #include "sources/src/utils/common/common.h"
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            Callbacks
+                        Plugin Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 typedef int (*plugin_config_cb)(char const*, char const*);
@@ -29,7 +29,8 @@ typedef int (*plugin_complex_config_cb)(oconfig_item_t *);
 typedef void (*module_register_t)(void);
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            Plugin structure
+                        Plugin & Metrics
+                            structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 typedef struct plugin_s plugin_t;
@@ -57,7 +58,8 @@ struct metrics_list_s
 };
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            Global variables functions
+                        Plugin & Metrics
+                            typedef
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 /* PLUGIN */
@@ -77,7 +79,8 @@ typedef size_t (*max_size_t)(size_t a, size_t b);
 
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                            PLUGIN LIST FUNCTIONS
+                            Plugin list
+                              Function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 /* PLUGIN INIT */
@@ -92,6 +95,11 @@ int plugin_deinit(size_t plugin_index);
 /* INDEX PLUGIN LABEL */
 int index_plugin_label(plugin_list_t *plugin_list, const char *plugin_label);
 
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            Metrics list
+                              Function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
 /* METRICS INIT */
 int metrics_init(value_list_t const *list);
 
@@ -101,12 +109,4 @@ int metrics_add(value_list_t const *list);
 /* METRICS DEINIT */
 void metrics_deinit(void);
 
-/* CPU SETTINGS RESET */
-void cpu_settings_reset(void);
-
-/* MEM SETTINGS RESET */
-void mem_settings_reset(void);
-
-/* max_size */
-size_t max_size(size_t a, size_t b);
 #endif /* COLLECTD_GLUE_H */

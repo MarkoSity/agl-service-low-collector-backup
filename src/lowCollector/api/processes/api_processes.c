@@ -47,22 +47,22 @@ json_object *api_processes_init(userdata_t *userdata)
   }
 
   /* Retrieve the global variable plugin list from the collectd glue library */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
-  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, "index_plugin_label");
+  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, INDEX_PLUGIN_LABEL_CHAR);
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
   /* Load the module register symbol */
-  module_register = (module_register_t)dlsym(userdata->handle_processes, "module_register");
+  module_register = (module_register_t)dlsym(userdata->handle_processes, MODULE_REGISTER_CHAR);
   if(!module_register)
     return json_object_new_string(dlerror());
 
   /* First let's check if a plugin with the memory name already exists */
-    if((*Index_plugin_label)(*plugin_list, "processes") != -1)
+    if((*Index_plugin_label)(*plugin_list, PROCESSES_CHAR) != -1)
       return json_object_new_string("Plugin already stored");
 
   /* Call the module register function to create the plugin and store its callbacks */
@@ -107,7 +107,7 @@ json_object *api_processes_config_context(userdata_t *userdata, int plugin_index
   config->children[2].values->value.boolean = false;
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
@@ -150,7 +150,7 @@ json_object *api_processes_config_file(userdata_t *userdata, int plugin_index)
   config->children[2].values->value.boolean = false;
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
@@ -194,7 +194,7 @@ json_object *api_processes_config_memory(userdata_t *userdata, int plugin_index)
 
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
@@ -223,17 +223,17 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
     return json_object_new_string("The processes plugin has not been initialized");
 
   /* Retrieve the max_size function */
-  Max_size = dlsym(userdata->handle_collectd, "max_size");
+  Max_size = dlsym(userdata->handle_collectd, MAX_SIZE_CHAR);
   if(!Max_size)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
-  Index_plugin_label = dlsym(userdata->handle_collectd, "index_plugin_label");
+  Index_plugin_label = dlsym(userdata->handle_collectd, INDEX_PLUGIN_LABEL_CHAR);
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
   /* Retrieve the plugin list variable */
-  plugin_list = (plugin_list_t **) dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **) dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
@@ -242,7 +242,7 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
     return json_object_new_string("Plugin list is null.");
 
   /* First, let's ensure the list has a processes plugin initialize */
-  plugin_index = (*Index_plugin_label)(*plugin_list, "processes");
+  plugin_index = (*Index_plugin_label)(*plugin_list, PROCESSES_CHAR);
   if(plugin_index == -1)
     return json_object_new_string("Plugin not stored.");
 
@@ -296,32 +296,32 @@ json_object *api_processes_read(userdata_t *userdata)
   res = json_object_new_object();
 
   /* Retrieve the global variable plugin list */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the global variable metrics list */
-  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, "Metrics_list");
+  metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
   if(!metrics_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the metrics deinit function */
-  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, "metrics_deinit");
+  Metrics_deinit = (metrics_deinit_t)dlsym(userdata->handle_collectd, METRICS_DEINIT_CHAR);
   if(!Metrics_deinit)
     return json_object_new_string(dlerror());
 
   /* Retrieve the max size function */
-  Max_size = (max_size_t)dlsym(userdata->handle_collectd, "max_size");
+  Max_size = (max_size_t)dlsym(userdata->handle_collectd, MAX_SIZE_CHAR);
   if(!Max_size)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
-  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, "index_plugin_label");
+  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, INDEX_PLUGIN_LABEL_CHAR);
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
   /* Ensure a plugin named processes is stored and retrieve its index */
-  plugin_index = (*Index_plugin_label)(*plugin_list, "processes");
+  plugin_index = (*Index_plugin_label)(*plugin_list, PROCESSES_CHAR);
   if(plugin_index == -1)
     return json_object_new_string("The processes plugin is not registered.");
 
@@ -351,17 +351,17 @@ json_object *api_processes_reset(userdata_t *userdata)
   index_plugin_label_t Index_plugin_label;
 
   /* Retrieve the global plugin list variable */
-  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, "Plugin_list");
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
   /* Retrieve the plugin deinit function */
-  Plugin_deinit = (plugin_deinit_t)dlsym(userdata->handle_collectd, "plugin_deinit");
+  Plugin_deinit = (plugin_deinit_t)dlsym(userdata->handle_collectd, PLUGIN_DEINIT_CHAR);
   if(!Plugin_deinit)
     return json_object_new_string(dlerror());
 
   /* Retrieve the index plugin label function */
-  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, "index_plugin_label");
+  Index_plugin_label = (index_plugin_label_t)dlsym(userdata->handle_collectd, INDEX_PLUGIN_LABEL_CHAR);
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
@@ -370,11 +370,11 @@ json_object *api_processes_reset(userdata_t *userdata)
     return json_object_new_string("The processes plugin is not registered.");
 
   /* Ensure the processes plugin is registered in the plugin list */
-  if((*Index_plugin_label)(*plugin_list, "processes") == -1)
+  if((*Index_plugin_label)(*plugin_list, PROCESSES_CHAR) == -1)
     return json_object_new_string("The processes plugin is not loaded.");
 
   /* Retrieve the index of the processes plugin */
-  plugin_index = (*Index_plugin_label)(*plugin_list, "processes");
+  plugin_index = (*Index_plugin_label)(*plugin_list, PROCESSES_CHAR);
 
   /* Delete the processes plugin from the list */
   if((*Plugin_deinit)(plugin_index))
