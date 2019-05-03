@@ -36,6 +36,7 @@
 
 /* Error messages */
 #define ERR_PLUGIN_IS_STORED_CHAR "plugin already stored"
+#define ERR_PLUGIN_UNKOWN "unknown plugin"
 #define ERR_RESET_CHAR "reset failure"
 #define ERR_READ_CHAR "read failure"
 #define ERR_CONFIG_CHAR "configuration failure"

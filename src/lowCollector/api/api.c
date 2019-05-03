@@ -50,7 +50,7 @@ json_object *api_plugin_init(userdata_t *userdata, json_object *arg)
   /* Retrieve the j-son arguments */
   args = json_object_new_object();
   if(!json_object_object_get_ex(arg, PLUGIN_CHAR, &args))
-    return json_object_new_string("Invalid key.");
+    return json_object_new_string(ERR_ARG_CHAR);
 
   /* Retrieve the type of the j-son arguments */
   args_type = json_object_get_type(args);
@@ -74,7 +74,7 @@ json_object *api_plugin_init(userdata_t *userdata, json_object *arg)
     }
 
     default:
-      return json_object_new_string("Fail to recognize arguments type (string or string array)");
+      return json_object_new_string(ERR_ARG_CHAR);
   }
 
   /* Define the loading counter which is usefull to know whether at least one plugin has been initialized */
@@ -127,7 +127,7 @@ json_object *api_plugin_init(userdata_t *userdata, json_object *arg)
 
   /* If none of the previous plugins were known or already stored */
   if(!loading_count)
-    return json_object_new_string("Unknown plugin(s).");
+    return json_object_new_string(ERR_PLUGIN_UNKOWN);
 
   return res;
 }
@@ -156,7 +156,7 @@ json_object *api_plugin_config(userdata_t *userdata, json_object *arg)
   else if(json_object_object_get_ex(arg, PROCESSES_CHAR, &args))
     return api_processes_config(userdata, args);
 
-  return json_object_new_string("Unknown plugin.");
+  return json_object_new_string(ERR_PLUGIN_UNKOWN);
 
 }
 
@@ -180,12 +180,12 @@ json_object *api_plugin_read(userdata_t *userdata, json_object *arg)
 
   /* Invalid key */
   if(!json_object_object_get_ex(arg, PLUGIN_CHAR, &args))
-    return json_object_new_string("Invalid key.");
+    return json_object_new_string(ERR_ARG_CHAR);
 
   /* Retrieve the argument type */
   args_type = json_object_get_type(args);
   if(args_type != json_type_string)
-    return json_object_new_string("Invalid plugin type (string).");
+    return json_object_new_string(ERR_ARG_CHAR);
 
   /* Retrieve the plugin_label from the j-son argument */
   plugin_label = (char*)json_object_get_string(args);
@@ -202,7 +202,7 @@ json_object *api_plugin_read(userdata_t *userdata, json_object *arg)
   else if(!strncmp(plugin_label, PROCESSES_CHAR, (*Max_size)((size_t) 9, strlen(plugin_label))))
     return api_processes_read(userdata);
 
-  return json_object_new_string("Unknown plugin.");
+  return json_object_new_string(ERR_PLUGIN_UNKOWN);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,16 +239,16 @@ json_object *api_plugin_reset(userdata_t *userdata, json_object *arg)
 
   /* Ensure the plugin list is not NULL */
   if(!(*plugin_list))
-    return json_object_new_string("Plugin list NULL.");
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   /* Ensure the plugin list is not empty */
   if(!(*plugin_list)->size)
-    return json_object_new_string("Plugin list empty.");
+    return json_object_new_string(ERR_PLUGIN_EMPTY_CHAR);
 
   /* Retrieve the j-son arguments */
   args = json_object_new_object();
   if(!json_object_object_get_ex(arg, PLUGIN_CHAR, &args))
-    return json_object_new_string("Invalid key.");
+    return json_object_new_string(ERR_ARG_CHAR);
 
   /* Retrieve the type of the j-son arguments */
   args_type = json_object_get_type(args);
@@ -272,7 +272,7 @@ json_object *api_plugin_reset(userdata_t *userdata, json_object *arg)
     }
 
     default:
-      return json_object_new_string("Fail to recognize arguments type (string or string array)");
+      return json_object_new_string(ERR_ARG_CHAR);
   }
 
   /* Define the reset counter which is usefull to know whether at least one plugin has been deleted */
@@ -325,7 +325,7 @@ json_object *api_plugin_reset(userdata_t *userdata, json_object *arg)
 
   /* If none of the previous plugins were known or already stored */
   if(!reset_count)
-    return json_object_new_string("Unknown plugin(s).");
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   return res;
 }

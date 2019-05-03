@@ -15,134 +15,60 @@
 ###########################################################################
 
 ############################################################################
+#                                   MACRO                                  #
+############################################################################
+MACRO(collectd_lib src_file label)
+
+ADD_LIBRARY(${TARGET_NAME} SHARED ${src_file})
+
+    TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src/daemon
+    )
+
+    # FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
+    TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
+        PUBLIC -DFP_LAYOUT_NEED_NOTHING
+        PUBLIC -DHAVE_CONFIG_H
+    )
+
+    if(NOT ${src_file} STREQUAL "collectd_glue.c")
+      target_compile_options(${TARGET_NAME}
+        PUBLIC -Wno-conversion -Wno-int-conversion
+        PUBLIC -std=c99
+    )
+    endif()
+
+  SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
+        LABELS label
+        PREFIX ""
+        SUFFIX ".so"
+        OUTPUT_NAME ${TARGET_NAME}
+  )
+
+ENDMACRO()
+
+############################################################################
 #                             COLLECTD GLUE                                #
 ############################################################################
 PROJECT_TARGET_ADD(collectd_glue)
-
-set(SRC_COLLECTD_GLUE
-"collectd_glue.c"
-)
-
-ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_COLLECTD_GLUE})
-
-TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/sources/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/sources/src/daemon
-)
-
-# FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
-TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
-    PUBLIC -DFP_LAYOUT_NEED_NOTHING
-    PUBLIC -DHAVE_CONFIG_H
-)
-
-SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-    LABELS "COLLECTD_GLUE"
-    PREFIX ""
-    SUFFIX ".so"
-    OUTPUT_NAME ${TARGET_NAME}
-)
+collectd_lib(collectd_glue.c COLLECTD_GLUE)
 
 ############################################################################
 #                             CPU plugin                                   #
 ############################################################################
-
 PROJECT_TARGET_ADD(cpu)
-    SET(SRC_CPU
-    "${CMAKE_CURRENT_SOURCE_DIR}/sources/src/cpu.c"
-    )
-
-    ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_CPU})
-
-    TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src
-      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src/daemon
-    )
-
-    # FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
-    TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
-        PUBLIC -DFP_LAYOUT_NEED_NOTHING
-        PUBLIC -DHAVE_CONFIG_H
-    )
-
-    target_compile_options(${TARGET_NAME}
-        PUBLIC -Wno-conversion -Wno-int-conversion
-        PUBLIC -std=c99
-    )
-
-  SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-        LABELS "PLUGINS"
-        PREFIX ""
-        SUFFIX ".so"
-        OUTPUT_NAME ${TARGET_NAME}
-  )
+collectd_lib(${CMAKE_CURRENT_SOURCE_DIR}/sources/src/cpu.c PLUGIN)
 
 ############################################################################
 #                             MEMORY plugin                                #
 ############################################################################
-  PROJECT_TARGET_ADD(memory)
-    SET(SRC_MEMORY
-    "${CMAKE_CURRENT_SOURCE_DIR}/sources/src/memory.c"
-    )
-
-    ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_MEMORY})
-
-    TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src
-      ${CMAKE_CURRENT_SOURCE_DIR}/sources/src/daemon
-    )
-
-    # FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
-    TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
-        PUBLIC -DFP_LAYOUT_NEED_NOTHING
-        PUBLIC -DHAVE_CONFIG_H
-    )
-
-    target_compile_options(${TARGET_NAME}
-        PUBLIC -Wno-conversion -Wno-int-conversion
-        PUBLIC -std=c99
-    )
-
-  SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-        LABELS "PLUGINS"
-        PREFIX ""
-        SUFFIX ".so"
-        OUTPUT_NAME ${TARGET_NAME}
-  )
+PROJECT_TARGET_ADD(memory)
+collectd_lib(${CMAKE_CURRENT_SOURCE_DIR}/sources/src/memory.c PLUGIN)
 
 ############################################################################
 #                           PROCESSES plugin                               #
 ############################################################################
 PROJECT_TARGET_ADD(processes)
-SET(SRC_PROCESSES
-"${CMAKE_CURRENT_SOURCE_DIR}/sources/src/processes.c"
-)
-
-ADD_LIBRARY(${TARGET_NAME} SHARED ${SRC_PROCESSES})
-
-TARGET_INCLUDE_DIRECTORIES(${TARGET_NAME} PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/sources/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/sources/src/daemon
-)
-
-# FIXME - Try to remove FP_LAYOUT_NEED_NOTHING and use config.h instead
-TARGET_COMPILE_DEFINITIONS(${TARGET_NAME}
-    PUBLIC -DFP_LAYOUT_NEED_NOTHING
-    PUBLIC -DHAVE_CONFIG_H
-)
-
-target_compile_options(${TARGET_NAME}
-    PUBLIC -Wno-conversion -Wno-int-conversion
-    PUBLIC -std=c99
-)
-
-SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-    LABELS "PLUGINS"
-    PREFIX ""
-    SUFFIX ".so"
-    OUTPUT_NAME ${TARGET_NAME}
-)
+collectd_lib(${CMAKE_CURRENT_SOURCE_DIR}/sources/src/processes.c PLUGIN)

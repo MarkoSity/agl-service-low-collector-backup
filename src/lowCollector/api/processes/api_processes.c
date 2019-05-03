@@ -205,6 +205,41 @@ json_object *api_processes_config_memory(userdata_t *userdata, int plugin_index)
   return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
+json_object *api_processes_config_test(userdata_t *userdata, int plugin_index)
+{
+  /* Variables definition */
+  plugin_list_t **plugin_list;
+  oconfig_item_t *config;
+
+  /* Variable allocation */
+  config = (oconfig_item_t *)malloc(sizeof(oconfig_item_t));
+  config->children_num = 2;
+  config->children = (oconfig_item_t*)malloc(config->children_num*sizeof(oconfig_item_t));
+  config->children[0].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+  config->children[1].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+
+  config->children[0].key = "Process";
+  config->children[0].values_num = 1;
+  config->children[0].values->type = OCONFIG_TYPE_STRING;
+  config->children[0].values->value.string = "afb-daemon";
+
+  config->children[1].key = "CollectMemoryMaps";
+  config->children[1].values_num = 1;
+  config->children[1].values->type = OCONFIG_TYPE_BOOLEAN;
+  config->children[1].values->value.boolean = true;
+
+  /* Retrieve the global variable plugin list */
+  plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
+  if(!plugin_list)
+    return json_object_new_string(dlerror());
+
+  /* Processes configuration */
+  if((*plugin_list)->plugin->complex_config(config))
+    return json_object_new_string(ERR_CONFIG_CHAR);
+
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
+}
+
 json_object *api_processes_config(userdata_t *userdata, json_object *args)
 {
   /* Variable definition */
@@ -262,6 +297,10 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
   /* Memory configuration case */
   else if(!strncmp(json_object_get_string(args), PROCESSES_MEMORY_CHAR, (*Max_size)(strlen(PROCESSES_MEMORY_CHAR), strlen(json_object_get_string(args)))))
     return api_processes_config_memory(userdata, plugin_index);
+
+  /* Test configuration case */
+  else if(!strncmp(json_object_get_string(args), "test", (*Max_size)(strlen("test"), strlen(json_object_get_string(args)))))
+    return api_processes_config_test(userdata, plugin_index);
 
   /* Unknown configuration */
   else

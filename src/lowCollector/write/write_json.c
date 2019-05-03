@@ -81,15 +81,25 @@ json_object *write_json(metrics_list_t *metrics_list)
       /* While the plugin instance do not change */
       while(!strncmp(plugin_instance_label, metrics_list->metrics[i].plugin_instance, max_size(strlen(plugin_instance_label), strlen(metrics_list->metrics[i].plugin_instance))))
       {
-        /* If the metrics do not have a type instance */
-        if(!strncmp(metrics_list->metrics[i].type_instance, "", strlen(metrics_list->metrics[i].type_instance)))
-          json_object_object_add(type_instance, metrics_list->metrics[i].plugin, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
+        /* Let's store the type label in a string */
+        type_label = malloc(strlen(metrics_list->metrics[i].type)*sizeof(char));
+        strcpy(type_label, metrics_list->metrics[i].type);
 
-        /* Pack the metrics value with it type instance associated */
-        else
-          json_object_object_add(type_instance, metrics_list->metrics[i].type_instance, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
+        /* While the type do not change */
+        while(!strncmp(type_label, metrics_list->metrics[i].type, max_size(strlen(type_label), strlen(metrics_list->metrics[i].type))))
+        {
+          printf("Plugin : %s\nPlugin_instance : %s\nType : %s\nType instance : %s\nvalue : %lf\n\n",
+          metrics_list->metrics[i].plugin, metrics_list->metrics[i].plugin_instance, metrics_list->metrics[i].type, metrics_list->metrics[i].type_instance, metrics_list->metrics[i].values->gauge);
+          /* If the metrics do not have a type instance */
+          if(!strncmp(metrics_list->metrics[i].type_instance, "", strlen(metrics_list->metrics[i].type_instance)))
+            json_object_object_add(type_instance, metrics_list->metrics[i].plugin, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
 
-        i++;
+          /* Pack the metrics value with it type instance associated */
+          else
+            json_object_object_add(type_instance, metrics_list->metrics[i].type_instance, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
+
+          i++;
+        }
       }
 
       /* Because of the previous while loop, we went one incremmentation too far */
@@ -116,6 +126,8 @@ json_object *write_json(metrics_list_t *metrics_list)
       /* While the type do not change */
       while(!strncmp(type_label, metrics_list->metrics[i].type, max_size(strlen(type_label), strlen(metrics_list->metrics[i].type))))
       {
+        printf("Plugin : %s\nPlugin_instance : %s\nType : %s\nType instance : %s\nvalue : %lf\n\n",
+          metrics_list->metrics[i].plugin, metrics_list->metrics[i].plugin_instance, metrics_list->metrics[i].type, metrics_list->metrics[i].type_instance, metrics_list->metrics[i].values->gauge);
         /* If the metrics do not have a type instance */
         if(!strncmp(metrics_list->metrics[i].type_instance, "", strlen(metrics_list->metrics[i].type_instance)))
           json_object_object_add(type_instance, metrics_list->metrics[i].plugin, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
