@@ -63,12 +63,12 @@ json_object *api_cpu_init(userdata_t *userdata)
 
   /* First let's check if a plugin with the cpu name already exists */
     if((*Index_plugin_label)(*plugin_list, CPU_CHAR) != -1)
-      return json_object_new_string("Plugin already stored");
+      return json_object_new_string(ERR_PLUGIN_IS_STORED_CHAR);
 
   /* Call the module register function to create the plugin and store its callbacks */
   (module_register)();
 
-  return json_object_new_string("Loaded.");
+  return json_object_new_string(SUCCESS_INIT_CHAR);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,7 +101,7 @@ json_object *api_cpu_config_mean(userdata_t *userdata, int plugin_index)
   || (*plugin_list)->plugin[plugin_index].config("ReportByState", "false")
   || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
   || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'mean'");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
   /* Launch the cpu read callack in order to initialise the collection */
   (*plugin_list)->plugin[plugin_index].read(NULL);
@@ -110,7 +110,7 @@ json_object *api_cpu_config_mean(userdata_t *userdata, int plugin_index)
   if((*metrics_list) && (*metrics_list)->size)
     (*Metrics_deinit)();
 
-  return json_object_new_string("'mean' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_cpu_config_mean_cpu(userdata_t *userdata, int plugin_index)
@@ -139,7 +139,7 @@ json_object *api_cpu_config_mean_cpu(userdata_t *userdata, int plugin_index)
   || (*plugin_list)->plugin[plugin_index].config("ReportByState", "false")
   || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
   || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'mean cpu'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
   /* Launch the cpu read callack in order to initialise the collection */
   (*plugin_list)->plugin[plugin_index].read(NULL);
@@ -148,7 +148,7 @@ json_object *api_cpu_config_mean_cpu(userdata_t *userdata, int plugin_index)
   if((*metrics_list) && (*metrics_list)->size)
     (*Metrics_deinit)();
 
-  return json_object_new_string("'mean cpu' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_cpu_config_mean_state(userdata_t *userdata, int plugin_index)
@@ -177,7 +177,7 @@ json_object *api_cpu_config_mean_state(userdata_t *userdata, int plugin_index)
   || (*plugin_list)->plugin[plugin_index].config("ReportByState", "true")
   || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
   || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'mean state'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
   /* Launch the cpu read callack in order to initialise the collection */
   (*plugin_list)->plugin[plugin_index].read(NULL);
@@ -186,7 +186,7 @@ json_object *api_cpu_config_mean_state(userdata_t *userdata, int plugin_index)
   if((*metrics_list) && (*metrics_list)->size)
     (*Metrics_deinit)();
 
-  return json_object_new_string("'mean state' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_cpu_config_percent_state_cpu(userdata_t *userdata, int plugin_index)
@@ -215,7 +215,7 @@ json_object *api_cpu_config_percent_state_cpu(userdata_t *userdata, int plugin_i
   || (*plugin_list)->plugin[plugin_index].config("ReportByState", "true")
   || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
   || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "true"))
-    return json_object_new_string("Fail to apply 'percent state cpu'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
   /* Launch the cpu read callack in order to initialise the collection */
   (*plugin_list)->plugin[plugin_index].read(NULL);
@@ -224,7 +224,7 @@ json_object *api_cpu_config_percent_state_cpu(userdata_t *userdata, int plugin_i
   if((*metrics_list) && (*metrics_list)->size)
     (*Metrics_deinit)();
 
-  return json_object_new_string("'percent state cpu' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_cpu_config_jiffies_state_cpu(userdata_t *userdata, int plugin_index)
@@ -253,7 +253,7 @@ json_object *api_cpu_config_jiffies_state_cpu(userdata_t *userdata, int plugin_i
   || (*plugin_list)->plugin[plugin_index].config("ReportByState", "true")
   || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "false")
   || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'jiffies state cpu'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
   /* Launch the cpu read callack in order to initialise the collection */
   (*plugin_list)->plugin[plugin_index].read(NULL);
@@ -262,7 +262,7 @@ json_object *api_cpu_config_jiffies_state_cpu(userdata_t *userdata, int plugin_i
   if((*metrics_list) && (*metrics_list)->size)
     (*Metrics_deinit)();
 
-  return json_object_new_string("'jiffies state cpu' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_cpu_config_number_cpu(userdata_t *userdata, int plugin_index)
@@ -289,7 +289,7 @@ json_object *api_cpu_config_number_cpu(userdata_t *userdata, int plugin_index)
   || (*plugin_list)->plugin[plugin_index].config("ReportByState", "false")
   || (*plugin_list)->plugin[plugin_index].config("ReportNumCpu", "true")
   || (*plugin_list)->plugin[plugin_index].config("ValuesPercentage", "false"))
-    return json_object_new_string("Fail to apply 'number'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
   /* Launch the cpu read callack in order to initialise the collection */
   (*plugin_list)->plugin[plugin_index].read(NULL);
@@ -298,7 +298,7 @@ json_object *api_cpu_config_number_cpu(userdata_t *userdata, int plugin_index)
   if((*metrics_list) && (*metrics_list)->size)
     (*Metrics_deinit)();
 
-  return json_object_new_string("'number' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_cpu_config(userdata_t *userdata, json_object *args)
@@ -312,7 +312,7 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
 
   /* Ensure the cpu library is open */
   if(!userdata->handle_cpu)
-    return json_object_new_string("The cpu plugin has not been initialized");
+    return json_object_new_string(ERR_LIB_CHAR);
 
   /* Retrieve the max_size function */
   Max_size = (max_size_t)dlsym(userdata->handle_collectd, MAX_SIZE_CHAR);
@@ -331,21 +331,21 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
 
   /* Ensure the plugin list ain't NULL */
   if(!(*plugin_list))
-    return json_object_new_string("Plugin list is null.");
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   /* First, let's ensure the list has a cpu plugin initialize */
   plugin_index = (*Index_plugin_label)(*plugin_list, CPU_CHAR);
   if(plugin_index == -1)
-    return json_object_new_string("Plugin not initialized.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Retrieve the type of the configuration and ensure it's a good one */
   args_type = json_object_get_type(args);
   if(args_type != json_type_string)
-    return json_object_new_string("Fail to recognize arguments type (string).");
+    return json_object_new_string(ERR_ARG_CHAR);
 
   /* Initialize the cpu plugin */
    if((*plugin_list)->plugin[plugin_index].init())
-     return json_object_new_string("Fail to initialize cpu plugin.");
+     return json_object_new_string(ERR_INIT_CHAR);
 
   /* Mean configuration case */
   if(!strncmp(json_object_get_string(args), CPU_MEAN_CHAR, (*Max_size)(strlen(CPU_MEAN_CHAR), strlen(json_object_get_string(args)))))
@@ -373,7 +373,7 @@ json_object *api_cpu_config(userdata_t *userdata, json_object *args)
 
   /* Unknown configuration */
   else
-    return json_object_new_string("Unknown configuration.");
+    return json_object_new_string(ERR_CONFIG_UNKNOWN_CHAR);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -393,7 +393,7 @@ json_object *api_cpu_read(userdata_t *userdata)
 
   /* Ensure the cpu library is opened */
   if(!userdata->handle_cpu)
-    return json_object_new_string("The cpu plugin has not been initialized.");
+    return json_object_new_string(ERR_LIB_CHAR);
 
   /* Variable allocation */
   res = json_object_new_object();
@@ -423,14 +423,18 @@ json_object *api_cpu_read(userdata_t *userdata)
   if(!Index_plugin_label)
     return json_object_new_string(dlerror());
 
+  /* Ensure the plugin list ain't NULL */
+  if(!*plugin_list)
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
+
   /* Ensure a plugin named cpu is stored and retrieve its index */
   plugin_index = (*Index_plugin_label)(*plugin_list, CPU_CHAR);
   if(plugin_index == -1)
-    return json_object_new_string("The cpu plugin is not registered.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Call the cpu callbacks read */
   if((*plugin_list)->plugin[plugin_index].read(NULL))
-    return json_object_new_string("Fail to execute the cpu read callback.");
+    return json_object_new_string(ERR_READ_CHAR);
 
   res = write_json((*metrics_list));
 
@@ -470,21 +474,25 @@ json_object *api_cpu_reset(userdata_t *userdata)
 
   /* Ensure the cpu library is opened */
   if(!userdata->handle_cpu)
-    return json_object_new_string("The cpu plugin is not registered.");
+    return json_object_new_string(ERR_LIB_CHAR);
+
+  /* Ensure the plugin list ain't NULL */
+  if(!*plugin_list)
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   /* Ensure the cpu plugin is registered in the plugin list */
   if((*Index_plugin_label)(*plugin_list, CPU_CHAR) == -1)
-    return json_object_new_string("The cpu plugin is not loaded.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Retrieve the index of the cpu plugin */
   plugin_index = (*Index_plugin_label)(*plugin_list, CPU_CHAR);
 
   /* Delete the cpu plugin from the list */
   if((*Plugin_deinit)(plugin_index))
-    return json_object_new_string("Fail to remove the cpu plugin.");
+    return json_object_new_string(ERR_RESET_CHAR);
 
   /* Close the cpu library */
   dlclose(userdata->handle_cpu);
   userdata->handle_cpu = NULL;
-  return json_object_new_string("Remove.");
+  return json_object_new_string(SUCCESS_RESET_CHAR);
 }

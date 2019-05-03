@@ -63,12 +63,12 @@ json_object *api_processes_init(userdata_t *userdata)
 
   /* First let's check if a plugin with the memory name already exists */
     if((*Index_plugin_label)(*plugin_list, PROCESSES_CHAR) != -1)
-      return json_object_new_string("Plugin already stored");
+      return json_object_new_string(ERR_PLUGIN_IS_STORED_CHAR);
 
   /* Call the module register function to create the plugin and store its callbacks */
   (module_register)();
 
-  return json_object_new_string("Loaded.");
+  return json_object_new_string(SUCCESS_INIT_CHAR);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,9 +113,9 @@ json_object *api_processes_config_context(userdata_t *userdata, int plugin_index
 
   /* Processes configuration */
   if((*plugin_list)->plugin->complex_config(config))
-    return json_object_new_string("Fail to apply 'context'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
-  return json_object_new_string("'context' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_processes_config_file(userdata_t *userdata, int plugin_index)
@@ -156,9 +156,9 @@ json_object *api_processes_config_file(userdata_t *userdata, int plugin_index)
 
   /* Processes configuration */
   if((*plugin_list)->plugin[plugin_index].complex_config(config))
-    return json_object_new_string("Fail to apply 'file'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
-  return json_object_new_string("'file' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_processes_config_memory(userdata_t *userdata, int plugin_index)
@@ -200,9 +200,9 @@ json_object *api_processes_config_memory(userdata_t *userdata, int plugin_index)
 
   /* Processes configuration */
   if((*plugin_list)->plugin[plugin_index].complex_config(config))
-    return json_object_new_string("Fail to apply 'memory'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
-  return json_object_new_string("'memory' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_processes_config(userdata_t *userdata, json_object *args)
@@ -216,7 +216,7 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
 
   /* Ensure the processes library is open */
   if(!userdata->handle_processes)
-    return json_object_new_string("The processes plugin has not been initialized");
+    return json_object_new_string(ERR_LIB_CHAR);
 
   /* Retrieve the max_size function */
   Max_size = dlsym(userdata->handle_collectd, MAX_SIZE_CHAR);
@@ -234,40 +234,38 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
     return json_object_new_string(dlerror());
 
   /* Ensure the plugin list ain't NULL */
-  if(!(*plugin_list))
-    return json_object_new_string("Plugin list is null.");
+  if(!*plugin_list)
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   /* First, let's ensure the list has a processes plugin initialize */
   plugin_index = (*Index_plugin_label)(*plugin_list, PROCESSES_CHAR);
   if(plugin_index == -1)
-    return json_object_new_string("Plugin not stored.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Retrieve the type of the configuration and ensure it's a good one */
   args_type = json_object_get_type(args);
   if(args_type != json_type_string)
-    return json_object_new_string("Fail to recognize arguments type (string).");
+    return json_object_new_string(ERR_ARG_CHAR);
 
   /* Launch the processes init callack */
   if((*plugin_list)->plugin[plugin_index].init())
-    return json_object_new_string("Fail to initialize the processes plugin.");
+    return json_object_new_string(ERR_INIT_CHAR);
 
   /* Context configuration case */
-  if(!strncmp(json_object_get_string(args), "context", (*Max_size)(strlen("context"), strlen(json_object_get_string(args)))))
+  if(!strncmp(json_object_get_string(args), PROCESSES_CONTEXT_CHAR, (*Max_size)(strlen(PROCESSES_CONTEXT_CHAR), strlen(json_object_get_string(args)))))
     return api_processes_config_context(userdata, plugin_index);
 
   /* File configuration case */
-  else if(!strncmp(json_object_get_string(args), "file", (*Max_size)(strlen("file"), strlen(json_object_get_string(args)))))
+  else if(!strncmp(json_object_get_string(args), PROCESSES_FILE_CHAR, (*Max_size)(strlen(PROCESSES_FILE_CHAR), strlen(json_object_get_string(args)))))
     return api_processes_config_file(userdata, plugin_index);
 
   /* Memory configuration case */
-  else if(!strncmp(json_object_get_string(args), "memory", (*Max_size)(strlen("memory"), strlen(json_object_get_string(args)))))
+  else if(!strncmp(json_object_get_string(args), PROCESSES_MEMORY_CHAR, (*Max_size)(strlen(PROCESSES_MEMORY_CHAR), strlen(json_object_get_string(args)))))
     return api_processes_config_memory(userdata, plugin_index);
 
   /* Unknown configuration */
   else
-  {
-    return json_object_new_string("Unknown configuration.");
-  }
+    return json_object_new_string(ERR_CONFIG_UNKNOWN_CHAR);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -287,7 +285,7 @@ json_object *api_processes_read(userdata_t *userdata)
 
   /* Ensure the processes library is opened */
   if(!userdata->handle_processes)
-    return json_object_new_string("The processes plugin has not been initialized.");
+    return json_object_new_string(ERR_LIB_CHAR);
 
   /* Variable allocation */
   res = json_object_new_object();
@@ -296,6 +294,10 @@ json_object *api_processes_read(userdata_t *userdata)
   plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
+
+  /* Ensure the plugin list ain't NULL */
+  if(!*plugin_list)
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   /* Retrieve the global variable metrics list */
   metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
@@ -320,11 +322,11 @@ json_object *api_processes_read(userdata_t *userdata)
   /* Ensure a plugin named processes is stored and retrieve its index */
   plugin_index = (*Index_plugin_label)(*plugin_list, PROCESSES_CHAR);
   if(plugin_index == -1)
-    return json_object_new_string("The processes plugin is not registered.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Call the memory callbacks read */
   if((*plugin_list)->plugin[plugin_index].read(NULL))
-    return json_object_new_string("Fail to execute the processes read callback.");
+    return json_object_new_string(ERR_READ_CHAR);
 
   res = write_json((*metrics_list));
 
@@ -352,6 +354,10 @@ json_object *api_processes_reset(userdata_t *userdata)
   if(!plugin_list)
     return json_object_new_string(dlerror());
 
+  /* Ensure the plugin list ain't NULL */
+  if(!*plugin_list)
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
+
   /* Retrieve the plugin deinit function */
   Plugin_deinit = (plugin_deinit_t)dlsym(userdata->handle_collectd, PLUGIN_DEINIT_CHAR);
   if(!Plugin_deinit)
@@ -364,21 +370,21 @@ json_object *api_processes_reset(userdata_t *userdata)
 
   /* Ensure the processes library is opened */
   if(!userdata->handle_processes)
-    return json_object_new_string("The processes plugin is not registered.");
+    return json_object_new_string(ERR_LIB_CHAR);
 
   /* Ensure the processes plugin is registered in the plugin list */
   if((*Index_plugin_label)(*plugin_list, PROCESSES_CHAR) == -1)
-    return json_object_new_string("The processes plugin is not loaded.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Retrieve the index of the processes plugin */
   plugin_index = (*Index_plugin_label)(*plugin_list, PROCESSES_CHAR);
 
   /* Delete the processes plugin from the list */
   if((*Plugin_deinit)(plugin_index))
-    return json_object_new_string("Fail to remove the processes plugin.");
+    return json_object_new_string(ERR_RESET_CHAR);
 
   /* Close the processes library */
   dlclose(userdata->handle_processes);
   userdata->handle_processes = NULL;
-  return json_object_new_string("Remove.");
+  return json_object_new_string(SUCCESS_RESET_CHAR);
 }

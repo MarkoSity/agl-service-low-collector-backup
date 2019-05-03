@@ -48,7 +48,8 @@ json_object *write_json(metrics_list_t *metrics_list)
   json_object *plugin_instance;
   json_object *type_witout_instance;
 
-  /* Variables allocation */
+  /* Json allocation, no need to free them after used cause the json_object_object_add
+  function transfer their addresses to the one they have been added */
   res = json_object_new_object();
   res_plugin = json_object_new_object();
   plugin_instance = json_object_new_object();
@@ -68,7 +69,8 @@ json_object *write_json(metrics_list_t *metrics_list)
     /* If the current metrics has a plugin instance */
     if(strncmp(metrics_list->metrics[i].plugin_instance, "", strlen(metrics_list->metrics[i].plugin_instance)))
     {
-      /* Json allocation due to json_object_object_add which destroy the json sources */
+      /* Json allocation, no need to free them after used cause the json_object_object_add
+      function transfer their addresses to the one they have been added */
       type_instance = json_object_new_object();
       type = json_object_new_object();
 
@@ -103,7 +105,8 @@ json_object *write_json(metrics_list_t *metrics_list)
     /* If we reach that point, it means the metrics do not have a plugin instance, then we gathered all of these type of metrics in a json */
     else
     {
-      /* Json allocation due to json_object_object_add which destroy the json sources */
+      /* Json allocation, no need to free them after used cause the json_object_object_add
+      function transfer their addresses to the one they have been added */
       type_instance = json_object_new_object();
 
       /* Let's store the type label in a string */

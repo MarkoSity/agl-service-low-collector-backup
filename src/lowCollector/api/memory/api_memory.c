@@ -63,12 +63,12 @@ json_object *api_memory_init(userdata_t *userdata)
 
   /* First let's check if a plugin with the memory name already exists */
     if((*Index_plugin_label)(*plugin_list, MEMORY_CHAR) != -1)
-      return json_object_new_string("Plugin already stored");
+      return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Call the module register function to create the plugin and store its callbacks */
   (module_register)();
 
-  return json_object_new_string("Loaded.");
+  return json_object_new_string(SUCCESS_INIT_CHAR);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,9 +108,9 @@ json_object *api_mem_config_absolute(userdata_t *userdata, int plugin_index)
 
   /* Memory configuration */
   if((*plugin_list)->plugin[plugin_index].complex_config(config))
-    return json_object_new_string("Fail to apply 'absolute'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
-  return json_object_new_string("'absolute' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_mem_config_percent(userdata_t *userdata, int plugin_index)
@@ -145,9 +145,9 @@ json_object *api_mem_config_percent(userdata_t *userdata, int plugin_index)
 
   /* Memory configuration */
   if((*plugin_list)->plugin[plugin_index].complex_config(config))
-    return json_object_new_string("Fail to apply 'percent'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
-  return json_object_new_string("'percent' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_mem_config_all(userdata_t *userdata, int plugin_index)
@@ -182,9 +182,9 @@ json_object *api_mem_config_all(userdata_t *userdata, int plugin_index)
 
   /* Memory configuration */
   if((*plugin_list)->plugin[plugin_index].complex_config(config))
-    return json_object_new_string("Fail to apply 'percent'.");
+    return json_object_new_string(ERR_CONFIG_CHAR);
 
-  return json_object_new_string("'all' apply.");
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 json_object *api_memory_config(userdata_t *userdata, json_object *args)
@@ -198,7 +198,7 @@ json_object *api_memory_config(userdata_t *userdata, json_object *args)
 
   /* Ensure the memory library is open */
   if(!userdata->handle_memory)
-    return json_object_new_string("The memory plugin has not been initialized");
+    return json_object_new_string(ERR_LIB_CHAR);
 
   /* Retrieve the max_size function */
   Max_size = dlsym(userdata->handle_collectd, MAX_SIZE_CHAR);
@@ -217,37 +217,37 @@ json_object *api_memory_config(userdata_t *userdata, json_object *args)
 
   /* Ensure the plugin list ain't NULL */
   if(!(*plugin_list))
-    return json_object_new_string("Plugin list is null.");
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   /* First, let's ensure the list has a memory plugin initialize */
   plugin_index = (*Index_plugin_label)(*plugin_list, MEMORY_CHAR);
   if(plugin_index == -1)
-    return json_object_new_string("Plugin not stored.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Retrieve the type of the configuration and ensure it's a good one */
   args_type = json_object_get_type(args);
   if(args_type != json_type_string)
-    return json_object_new_string("Fail to recognize arguments type (string).");
+    return json_object_new_string(ERR_ARG_CHAR);
 
   /* Launch the memory init callack */
   if((*plugin_list)->plugin[plugin_index].init())
-    return json_object_new_string("Fail to initialize the memory plugin.");
+    return json_object_new_string(ERR_INIT_CHAR);
 
   /* Absolute configuration case */
-  if(!strncmp(json_object_get_string(args), "absolute", (*Max_size)(strlen("absolute"), strlen(json_object_get_string(args)))))
+  if(!strncmp(json_object_get_string(args), MEMORY_ABSOLUTE_CHAR, (*Max_size)(strlen(MEMORY_ABSOLUTE_CHAR), strlen(json_object_get_string(args)))))
    return api_mem_config_absolute(userdata, plugin_index);
 
   /* Percentage configuration case */
-  else if(!strncmp(json_object_get_string(args), "percent", (*Max_size)(strlen("percent"), strlen(json_object_get_string(args)))))
+  else if(!strncmp(json_object_get_string(args), MEMORY_PERCENT_CHAR, (*Max_size)(strlen(MEMORY_PERCENT_CHAR), strlen(json_object_get_string(args)))))
     return api_mem_config_percent(userdata, plugin_index);
 
   /* All configuration case */
-  else if(!strncmp(json_object_get_string(args), "all", (*Max_size)(strlen("all"), strlen(json_object_get_string(args)))))
+  else if(!strncmp(json_object_get_string(args), MEMORY_ALL_CHAR, (*Max_size)(strlen(MEMORY_ALL_CHAR), strlen(json_object_get_string(args)))))
     return api_mem_config_all(userdata, plugin_index);
 
   /* Uknown configuration */
   else
-    return json_object_new_string("Unknown configuration.");
+    return json_object_new_string(ERR_CONFIG_UNKNOWN_CHAR);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -267,7 +267,7 @@ json_object *api_memory_read(userdata_t *userdata)
 
   /* Ensure the memory library is opened */
   if(!userdata->handle_memory)
-    return json_object_new_string("The memory plugin has not been initialized.");
+    return json_object_new_string(ERR_LIB_CHAR);
 
   /* Variable allocation */
   res = json_object_new_object();
@@ -276,6 +276,10 @@ json_object *api_memory_read(userdata_t *userdata)
   plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
   if(!plugin_list)
     return json_object_new_string(dlerror());
+
+  /* Ensure the plugin list ain't NULL */
+  if(!*plugin_list)
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   /* Retrieve the global variable metrics list */
   metrics_list = (metrics_list_t **)dlsym(userdata->handle_collectd, METRICS_LIST_CHAR);
@@ -300,11 +304,11 @@ json_object *api_memory_read(userdata_t *userdata)
   /* Ensure a plugin named memory is stored and retrieve its index */
   plugin_index = (*Index_plugin_label)(*plugin_list, MEMORY_CHAR);
   if(plugin_index == -1)
-    return json_object_new_string("The memory plugin is not registered.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Call the memory callbacks read */
   if((*plugin_list)->plugin[plugin_index].read(NULL))
-    return json_object_new_string("Fail to execute the memory read callback.");
+    return json_object_new_string(ERR_READ_CHAR);
 
   res = write_json((*metrics_list));
 
@@ -344,21 +348,25 @@ json_object *api_memory_reset(userdata_t *userdata)
 
   /* Ensure the memory library is opened */
   if(!userdata->handle_memory)
-    return json_object_new_string("The memory plugin is not registered.");
+    return json_object_new_string(ERR_LIB_CHAR);
+
+  /* Ensure the plugin list ain't NULL */
+  if(!*plugin_list)
+    return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
   /* Ensure the memory plugin is registered in the plugin list */
   if((*Index_plugin_label)(*plugin_list, MEMORY_CHAR) == -1)
-    return json_object_new_string("The memory plugin is not loaded.");
+    return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
 
   /* Retrieve the index of the memory plugin */
   plugin_index = (*Index_plugin_label)(*plugin_list, MEMORY_CHAR);
 
   /* Delete the memory plugin from the list */
   if((*Plugin_deinit)(plugin_index))
-    return json_object_new_string("Fail to remove the memory plugin.");
+    return json_object_new_string(ERR_RESET_CHAR);
 
   /* Close the memory library */
   dlclose(userdata->handle_memory);
   userdata->handle_memory = NULL;
-  return json_object_new_string("Remove.");
+  return json_object_new_string(SUCCESS_RESET_CHAR);
 }
