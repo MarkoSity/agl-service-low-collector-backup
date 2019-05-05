@@ -63,7 +63,7 @@ json_object *api_memory_init(userdata_t *userdata)
 
   /* First let's check if a plugin with the memory name already exists */
     if((*Index_plugin_label)(*plugin_list, MEMORY_CHAR) != -1)
-      return json_object_new_string(ERR_PLUGIN_STORED_CHAR);
+      return json_object_new_string(ERR_PLUGIN_IS_STORED_CHAR);
 
   /* Call the module register function to create the plugin and store its callbacks */
   (module_register)();

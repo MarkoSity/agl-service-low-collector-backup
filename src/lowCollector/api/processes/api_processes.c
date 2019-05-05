@@ -112,7 +112,7 @@ json_object *api_processes_config_context(userdata_t *userdata, int plugin_index
     return json_object_new_string(dlerror());
 
   /* Processes configuration */
-  if((*plugin_list)->plugin->complex_config(config))
+  if((*plugin_list)->plugin[plugin_index].complex_config(config))
     return json_object_new_string(ERR_CONFIG_CHAR);
 
   return json_object_new_string(SUCCESS_CONFIG_CHAR);
@@ -213,20 +213,34 @@ json_object *api_processes_config_test(userdata_t *userdata, int plugin_index)
 
   /* Variable allocation */
   config = (oconfig_item_t *)malloc(sizeof(oconfig_item_t));
-  config->children_num = 2;
+  config->children_num = 1;
   config->children = (oconfig_item_t*)malloc(config->children_num*sizeof(oconfig_item_t));
   config->children[0].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
-  config->children[1].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+  config->children[0].children_num = 3;
+  config->children[0].children = (oconfig_item_t*)malloc(config->children[0].children_num*sizeof(oconfig_item_t));
+  config->children[0].children[0].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+  config->children[0].children[1].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+  config->children[0].children[2].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
 
   config->children[0].key = "Process";
   config->children[0].values_num = 1;
   config->children[0].values->type = OCONFIG_TYPE_STRING;
   config->children[0].values->value.string = "afb-daemon";
 
-  config->children[1].key = "CollectMemoryMaps";
-  config->children[1].values_num = 1;
-  config->children[1].values->type = OCONFIG_TYPE_BOOLEAN;
-  config->children[1].values->value.boolean = true;
+  config->children[0].children[0].key = "CollectContextSwitch";
+  config->children[0].children[0].values_num = 1;
+  config->children[0].children[0].values->type = OCONFIG_TYPE_BOOLEAN;
+  config->children[0].children[0].values->value.boolean = true;
+
+  config->children[0].children[1].key = "CollectFileDescriptor";
+  config->children[0].children[1].values_num = 1;
+  config->children[0].children[1].values->type = OCONFIG_TYPE_BOOLEAN;
+  config->children[0].children[1].values->value.boolean = true;
+
+  config->children[0].children[2].key = "CollectMemoryMaps";
+  config->children[0].children[2].values_num = 1;
+  config->children[0].children[2].values->type = OCONFIG_TYPE_BOOLEAN;
+  config->children[0].children[2].values->value.boolean = true;
 
   /* Retrieve the global variable plugin list */
   plugin_list = (plugin_list_t **)dlsym(userdata->handle_collectd, PLUGIN_LIST_CHAR);
@@ -234,8 +248,9 @@ json_object *api_processes_config_test(userdata_t *userdata, int plugin_index)
     return json_object_new_string(dlerror());
 
   /* Processes configuration */
-  if((*plugin_list)->plugin->complex_config(config))
+  if((*plugin_list)->plugin[plugin_index].complex_config(config))
     return json_object_new_string(ERR_CONFIG_CHAR);
+
 
   return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }

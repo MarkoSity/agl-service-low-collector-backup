@@ -39,21 +39,36 @@ size_t max_size(size_t a, size_t b)
 json_object *write_json(metrics_list_t *metrics_list)
 {
   /* Variables declaration */
+  /* Json */
   json_object *res;
-  json_object *res_plugin;
+  json_object *value_without_instance;
+  json_object *value_with_instance;
+  json_object *value;
+  json_object *type;
+  json_object *plugin_with_instance;
+  json_object *plugin_without_instance;
+  json_object *plugin_tmp;
+  json_object *plugin;
+
+  /* String label */
+  char *host_label;
+  char *plugin_label;
   char *plugin_instance_label;
   char *type_label;
-  json_object *type_instance;
-  json_object *type;
-  json_object *plugin_instance;
-  json_object *type_witout_instance;
+  char *type_instance_label;
 
-  /* Json allocation, no need to free them after used cause the json_object_object_add
-  function transfer their addresses to the one they have been added */
+  int index = 0;
+
+  /* Variable allocation */
   res = json_object_new_object();
-  res_plugin = json_object_new_object();
-  plugin_instance = json_object_new_object();
-  type_witout_instance = json_object_new_object();
+  value_without_instance = json_object_new_object();
+  value_with_instance = json_object_new_object();
+  value = json_object_new_object();
+  type = json_object_new_object();
+  plugin_with_instance = json_object_new_object();
+  plugin_without_instance = json_object_new_object();
+  plugin_tmp = json_object_new_object();
+  plugin = json_object_new_object();
 
   /* Ensure the metrics list is not NULL */
   if(!metrics_list)
@@ -63,98 +78,143 @@ json_object *write_json(metrics_list_t *metrics_list)
   if(!metrics_list->size)
     return json_object_new_string("Metrics list empty.");
 
-  /* For each one of the metrics stored in the list */
-  for(int i = 0 ; i != metrics_list->size ; i++)
+  /* While index is not out of bond */
+  while(index != metrics_list->size)
   {
-    /* If the current metrics has a plugin instance */
-    if(strncmp(metrics_list->metrics[i].plugin_instance, "", strlen(metrics_list->metrics[i].plugin_instance)))
+    /* Retrieve and store the metrics host label */
+    host_label = (char *)malloc(strlen(metrics_list->metrics[index].host) + 1);
+    strcpy(host_label, metrics_list->metrics[index].host);
+
+    /* While the metrics host do not change */
+    while(!strncmp(metrics_list->metrics[index].host, host_label,
+         max_size(strlen(metrics_list->metrics[index].host), strlen(host_label))))
     {
-      /* Json allocation, no need to free them after used cause the json_object_object_add
-      function transfer their addresses to the one they have been added */
-      type_instance = json_object_new_object();
-      type = json_object_new_object();
+      /* Retrieve and store the metrics plugin */
+      plugin_label = (char *)malloc(strlen(metrics_list->metrics[index].plugin) + 1);
+      strcpy(plugin_label, metrics_list->metrics[index].plugin);
 
-      /* Let's store the plugin instance in a string */
-      plugin_instance_label = malloc(strlen(metrics_list->metrics[i].plugin_instance)*sizeof(char));
-      strcpy(plugin_instance_label, metrics_list->metrics[i].plugin_instance);
-
-      /* While the plugin instance do not change */
-      while(!strncmp(plugin_instance_label, metrics_list->metrics[i].plugin_instance, max_size(strlen(plugin_instance_label), strlen(metrics_list->metrics[i].plugin_instance))))
+      /* While the metrics plugin do not change */
+      while(!strncmp(metrics_list->metrics[index].host, host_label,
+           max_size(strlen(metrics_list->metrics[index].host), strlen(host_label))) &&
+           !strncmp(metrics_list->metrics[index].plugin, plugin_label,
+           max_size(strlen(metrics_list->metrics[index].plugin), strlen(plugin_label))))
       {
-        /* Let's store the type label in a string */
-        type_label = malloc(strlen(metrics_list->metrics[i].type)*sizeof(char));
-        strcpy(type_label, metrics_list->metrics[i].type);
+        /* Retrieve and store the metrics plugin instance label */
+        plugin_instance_label = (char *)malloc(strlen(metrics_list->metrics[index].plugin_instance) + 1);
+        strcpy(plugin_instance_label, metrics_list->metrics[index].plugin_instance);
 
-        /* While the type do not change */
-        while(!strncmp(type_label, metrics_list->metrics[i].type, max_size(strlen(type_label), strlen(metrics_list->metrics[i].type))))
+        /* While the metrics plugin instance do not change */
+        while(!strncmp(metrics_list->metrics[index].host, host_label,
+              max_size(strlen(metrics_list->metrics[index].host), strlen(host_label))) &&
+              !strncmp(metrics_list->metrics[index].plugin, plugin_label,
+              max_size(strlen(metrics_list->metrics[index].plugin), strlen(plugin_label))) &&
+              !strncmp(metrics_list->metrics[index].plugin_instance, plugin_instance_label,
+              max_size(strlen(metrics_list->metrics[index].plugin_instance), strlen(plugin_instance_label))))
         {
-          printf("Plugin : %s\nPlugin_instance : %s\nType : %s\nType instance : %s\nvalue : %lf\n\n",
-          metrics_list->metrics[i].plugin, metrics_list->metrics[i].plugin_instance, metrics_list->metrics[i].type, metrics_list->metrics[i].type_instance, metrics_list->metrics[i].values->gauge);
-          /* If the metrics do not have a type instance */
-          if(!strncmp(metrics_list->metrics[i].type_instance, "", strlen(metrics_list->metrics[i].type_instance)))
-            json_object_object_add(type_instance, metrics_list->metrics[i].plugin, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
+          /* Retrieve and store the metrics type */
+          type_label = (char *)malloc(strlen(metrics_list->metrics[index].type) + 1);
+          strcpy(type_label, metrics_list->metrics[index].type);
 
-          /* Pack the metrics value with it type instance associated */
-          else
-            json_object_object_add(type_instance, metrics_list->metrics[i].type_instance, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
+          /* While the metrics type do not change */
+          while(!strncmp(metrics_list->metrics[index].host, host_label,
+                max_size(strlen(metrics_list->metrics[index].host), strlen(host_label))) &&
+                !strncmp(metrics_list->metrics[index].plugin, plugin_label,
+                max_size(strlen(metrics_list->metrics[index].plugin), strlen(plugin_label))) &&
+                !strncmp(metrics_list->metrics[index].plugin_instance, plugin_instance_label,
+                max_size(strlen(metrics_list->metrics[index].plugin_instance), strlen(plugin_instance_label))) &&
+                !strncmp(metrics_list->metrics[index].type, type_label,
+                max_size(strlen(metrics_list->metrics[index].type), strlen(type_label))))
+          {
+            /* Retrieve and store the metrics type instance*/
+            type_instance_label = (char *)malloc(strlen(metrics_list->metrics[index].type_instance) + 1);
+            strcpy(type_instance_label, metrics_list->metrics[index].type_instance);
 
-          i++;
+            /* While the type instance do not change */
+            while(!strncmp(metrics_list->metrics[index].host, host_label,
+                  max_size(strlen(metrics_list->metrics[index].host), strlen(host_label))) &&
+                  !strncmp(metrics_list->metrics[index].plugin, plugin_label,
+                  max_size(strlen(metrics_list->metrics[index].plugin), strlen(plugin_label))) &&
+                  !strncmp(metrics_list->metrics[index].plugin_instance, plugin_instance_label,
+                  max_size(strlen(metrics_list->metrics[index].plugin_instance), strlen(plugin_instance_label))) &&
+                  !strncmp(metrics_list->metrics[index].type, type_label,
+                  max_size(strlen(metrics_list->metrics[index].type), strlen(type_label))) &&
+                  !strncmp(metrics_list->metrics[index].type_instance, type_instance_label,
+                  max_size(strlen(metrics_list->metrics[index].type_instance), strlen(type_instance_label))))
+            {
+              /* If the type instance if empty, we put the value in its associated json */
+              if(!strncmp(type_instance_label, "", strlen(type_instance_label)))
+                wrap_json_object_add(value_without_instance,
+                                    json_object_new_double(metrics_list->metrics[index].values->gauge));
+              
+               /* Else we add the value with it associated type instance */
+              else
+                json_object_object_add(value_with_instance, type_instance_label,
+                                      json_object_new_double(metrics_list->metrics[index].values->gauge));
+
+              /* We have just stored an other metrics value so we increment the index */
+              index++;
+            }
+
+            /* Gathered the two type of value previously fill */
+            wrap_json_object_add(value, value_without_instance);
+            wrap_json_object_add(value, value_with_instance);
+
+            /* Type instance label desallocation */
+            sfree(type_instance_label);
+          }
+
+          /* Associate the values with their type */
+          json_object_object_add(type, type_label, value);
+
+          /* Json allocation because of the previous function which
+          delete the json pointer */
+          value = json_object_new_object();
+
+          /* Type label desallocation */
+          sfree(type_label);
         }
-      }
 
-      /* Because of the previous while loop, we went one incremmentation too far */
-      i--;
+        /* If the current metrics do not have a plugin instance */
+        if(!strncmp(plugin_instance_label, "", strlen(plugin_instance_label)))
+          wrap_json_object_add(plugin_without_instance, type);
 
-      /* Then we associate it to its type */
-      json_object_object_add(type, metrics_list->metrics[i].type, type_instance);
-
-      /* Then we associate the json with its plugin instance */
-      json_object_object_add(plugin_instance, metrics_list->metrics[i].plugin_instance, type);
-    }
-
-    /* If we reach that point, it means the metrics do not have a plugin instance, then we gathered all of these type of metrics in a json */
-    else
-    {
-      /* Json allocation, no need to free them after used cause the json_object_object_add
-      function transfer their addresses to the one they have been added */
-      type_instance = json_object_new_object();
-
-      /* Let's store the type label in a string */
-      type_label = malloc(strlen(metrics_list->metrics[i].type)*sizeof(char));
-      strcpy(type_label, metrics_list->metrics[i].type);
-
-      /* While the type do not change */
-      while(!strncmp(type_label, metrics_list->metrics[i].type, max_size(strlen(type_label), strlen(metrics_list->metrics[i].type))))
-      {
-        printf("Plugin : %s\nPlugin_instance : %s\nType : %s\nType instance : %s\nvalue : %lf\n\n",
-          metrics_list->metrics[i].plugin, metrics_list->metrics[i].plugin_instance, metrics_list->metrics[i].type, metrics_list->metrics[i].type_instance, metrics_list->metrics[i].values->gauge);
-        /* If the metrics do not have a type instance */
-        if(!strncmp(metrics_list->metrics[i].type_instance, "", strlen(metrics_list->metrics[i].type_instance)))
-          json_object_object_add(type_instance, metrics_list->metrics[i].plugin, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
-
-        /* Pack the metrics value with it type instance associated */
+        /* Else the metrics has a plugin instance */
         else
-          json_object_object_add(type_instance, metrics_list->metrics[i].type_instance, json_object_new_double((double) metrics_list->metrics[i].values->gauge));
+          json_object_object_add(plugin_with_instance, plugin_instance_label, type);
 
-        i++;
+        /* Json allocation because of the previous function which
+        delete the json pointer */
+        type = json_object_new_object();
+
+        /* Plugin instance label desallocation */
+        sfree(plugin_instance_label);
       }
 
-      /* Because of the previous while loop, we went one incremmentation too far */
-      i--;
+      /* Gather the two previous json a temporary json plugin */
+      wrap_json_object_add(plugin_tmp, plugin_with_instance);
+      wrap_json_object_add(plugin_tmp, plugin_without_instance);
 
-      /* Then we associate it to its type */
-      json_object_object_add(type_witout_instance, metrics_list->metrics[i].type, type_instance);
+      /* Associate the previous json with their associated key */
+      json_object_object_add(plugin, plugin_label, plugin_tmp);
+
+      /* Json allocation because of the previous function which
+      delete the json pointer */
+      plugin_tmp = json_object_new_object();
+
+      /* Plugin label desallocation */
+      sfree(plugin_label);
     }
+    
+    /* Associate the whole metrics value with their associated host */
+    json_object_object_add(res, host_label, plugin);
+
+    /* Json allocation because of the previous function which
+    delete the json pointer */
+    plugin = json_object_new_object();
+
+    /* Host label desallocation */
+    sfree(host_label);
   }
-
-  /* Add without any key the two type of json */
-  wrap_json_object_add(plugin_instance, type_witout_instance);
-
-  /* Add the name of the plugin as a key to these variables */
-  json_object_object_add(res_plugin, metrics_list->metrics->plugin, plugin_instance);
-
-  /* Add the host to the final response */
-  json_object_object_add(res, metrics_list->metrics->host, res_plugin);
 
   return res;
 }
