@@ -47,6 +47,9 @@
 #define ERR_PLUGIN_EMPTY_CHAR "plugin list empty"
 #define ERR_LIB_CHAR "plugin library closed"
 #define ERR_ARG_CHAR "argument(s) missconfigured"
+#define ERR_METRICS_NULL_CHAR "metrics list NULL"
+#define ERR_METRICS_EMPTY_CHAR "metrics list empty"
+#define ERR_ALLOC_CHAR "allocation failed"
 
 /* Global variable */
 #define PLUGIN_LIST_CHAR "Plugin_list"
