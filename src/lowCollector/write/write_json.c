@@ -38,6 +38,9 @@ json_object *json_agregation(json_object *obj1, json_object *obj2)
   json_object *temp1;
   json_object *temp2;
 
+  temp1 = json_object_new_object();
+  temp2 = json_object_new_object();
+
   temp1 = wrap_json_clone(obj1);
   temp2 = wrap_json_clone(obj2);
 
@@ -48,12 +51,14 @@ json_object *json_agregation(json_object *obj1, json_object *obj2)
 
 void json_free(json_object *obj)
 {
-  int idx;
+  /* int idx;
 
-  idx = json_object_put(obj);
+  idx = 0;
   
   while(idx != 1)
-    idx = json_object_put(obj);
+    idx = json_object_put(obj); */
+
+  obj = NULL;
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -225,9 +230,7 @@ json_object *write_json(metrics_list_t *metrics_list)
                   max_size(strlen(metrics_list->metrics[index].type_instance), strlen(type_instance_label))))
             {
               /* Store the metrics in a json */
-              value = json_object_new_double(metrics_list->metrics[index].values->gauge);
-              if(!value)
-                return json_object_new_string(ERR_ALLOC_CHAR);
+              value = json_agregation(json_object_new_double(metrics_list->metrics[index].values->gauge), value);
                 
               printf("value : %lf\n", metrics_list->metrics[index].values->gauge);
 
@@ -240,18 +243,17 @@ json_object *write_json(metrics_list_t *metrics_list)
               json_object_object_add(type_instance, type_instance_label, wrap_json_clone(value));
 
             else
-              json_object_object_add(type_instance, plugin_label, wrap_json_clone(value));
+              type_instance = json_agregation(value, type_instance);
 
             /* Json desallocation */
-            /* printf("free value json\n");
-            json_free(value); */
+            printf("free value json\n");
+            json_free(value);
             
             /* Type instance label desallocation */
             printf("free type instance label\n");
             sfree(type_instance_label);
           }
 
-          /* Associate the values with their type */
           json_object_object_add(type, type_label, wrap_json_clone(type_instance));
 
           /* Json_desallocation */
@@ -265,7 +267,9 @@ json_object *write_json(metrics_list_t *metrics_list)
 
         /* If the current metrics do not have a plugin instance */
         if(!strncmp(plugin_instance_label, "", strlen(plugin_instance_label)))
-          wrap_json_object_add(plugin_without_instance, type);
+        {
+          wrap_json_object_add(plugin_without_instance, wrap_json_clone(type));
+        }
 
         /* Else the metrics has a plugin instance */
         else
@@ -289,8 +293,10 @@ json_object *write_json(metrics_list_t *metrics_list)
       /* Json desallocation */
       printf("free plugin plugin without instance json\n");
       json_free(plugin_without_instance);
+
       printf("free plugin with instance json\n");
       json_free(plugin_with_instance);
+
       printf("free plugin tmp json\n");
       json_free(plugin_tmp);
 
