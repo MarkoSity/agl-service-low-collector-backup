@@ -58,10 +58,8 @@ json_object *write_json(metrics_list_t *metrics_list)
   char *type_instance_label;
 
   int index = 0;
-  int test;
 
   /* Variable allocation */
-  printf("malloc res\n");
   res = json_object_new_object();
   if(!res)
     return json_object_new_string(ERR_ALLOC_CHAR);
@@ -78,15 +76,11 @@ json_object *write_json(metrics_list_t *metrics_list)
   while(index != metrics_list->size)
   {
     /* Retrieve and store the metrics host label */
-    printf("malloc host label\n");
     host_label = strdup(metrics_list->metrics[index].host);
     if(!host_label)
       return json_object_new_string(ERR_ALLOC_CHAR);
 
-    printf("host : %s\n", host_label);
-
     /* Json allocation */
-    printf("malloc plugin json\n");
     plugin = json_object_new_object();
     if(!plugin)
       return json_object_new_string(ERR_ALLOC_CHAR);
@@ -96,20 +90,15 @@ json_object *write_json(metrics_list_t *metrics_list)
          max_size(strlen(metrics_list->metrics[index].host), strlen(host_label))))
     {
       /* Retrieve and store the metrics plugin */
-      printf("malloc plugin label\n");
       plugin_label = strdup(metrics_list->metrics[index].plugin);
       if(!plugin_label)
         return json_object_new_string(ERR_ALLOC_CHAR);
 
-      printf("plugin : %s\n", plugin_label);
-
       /* Json allocation */
-      printf("malloc plugin without instance json\n");
       plugin_without_instance = json_object_new_object();
       if(!plugin_without_instance)
         return json_object_new_string(ERR_ALLOC_CHAR);
 
-      printf("malloc plugin with instance json\n");
       plugin_with_instance = json_object_new_object();
       if(!plugin_with_instance)
         return json_object_new_string(ERR_ALLOC_CHAR);
@@ -121,15 +110,11 @@ json_object *write_json(metrics_list_t *metrics_list)
            max_size(strlen(metrics_list->metrics[index].plugin), strlen(plugin_label))))
       {
         /* Retrieve and store the metrics plugin instance label */
-        printf("malloc plugin instance label\n");
         plugin_instance_label = strdup(metrics_list->metrics[index].plugin_instance);
         if(!plugin_instance_label)
           return json_object_new_string(ERR_ALLOC_CHAR);
 
-        printf("plugin instance : %s\n", plugin_instance_label);
-
         /* Json allocation */
-        printf("malloc type json\n");
         type = json_object_new_object();
         if(!type)
           return json_object_new_string(ERR_ALLOC_CHAR);
@@ -143,15 +128,11 @@ json_object *write_json(metrics_list_t *metrics_list)
               max_size(strlen(metrics_list->metrics[index].plugin_instance), strlen(plugin_instance_label))))
         {
           /* Retrieve and store the metrics type */
-          printf("malloc type label\n");
           type_label = (char *) strdup(metrics_list->metrics[index].type);
           if(!type_label)
             return json_object_new_string(ERR_ALLOC_CHAR);
 
-          printf("type : %s\n", type_label);
-
           /* Json allocation */
-          printf("malloc type instance json\n");
           type_instance = json_object_new_object();
           if(!type_instance)
             return json_object_new_string(ERR_ALLOC_CHAR);
@@ -167,15 +148,11 @@ json_object *write_json(metrics_list_t *metrics_list)
                 max_size(strlen(metrics_list->metrics[index].type), strlen(type_label))))
           {
             /* Retrieve and store the metrics type instance*/
-            printf("malloc type instance label\n");
             type_instance_label = (char *)strdup(metrics_list->metrics[index].type_instance);
             if(!type_instance_label)
               return json_object_new_string(ERR_ALLOC_CHAR);
 
-            printf("type instance : %s\n", type_instance_label);
-
             /* Json allocation */
-            printf("malloc value json\n");
             value_list = json_object_new_array();
             if(!value_list)
               return json_object_new_string(ERR_ALLOC_CHAR);
@@ -197,7 +174,6 @@ json_object *write_json(metrics_list_t *metrics_list)
               {
                 /* Store the value in the value list */
                 value = json_object_new_double(metrics_list->metrics[index].values[i].gauge);
-                printf("value : %lf\n", metrics_list->metrics[index].values[i].gauge);
                 json_object_array_add(value_list, value);
               }
 
@@ -210,17 +186,16 @@ json_object *write_json(metrics_list_t *metrics_list)
               json_object_object_add(type_instance, type_instance_label, value_list);
 
             else
-              wrap_json_object_add(type_instance, value_list);
+              json_object_object_add(type_instance, type_instance_label, value_list);
+              /* wrap_json_object_add(type_instance, value_list); */
 
             /* Type instance label desallocation */
-            printf("free type instance label\n");
             sfree(type_instance_label);
           }
 
           json_object_object_add(type, type_label, type_instance);
 
           /* Type label desallocation */
-          printf("free type label\n");
           sfree(type_label);
         }
 
@@ -233,7 +208,6 @@ json_object *write_json(metrics_list_t *metrics_list)
           json_object_object_add(plugin_with_instance, plugin_instance_label, type);
 
         /* Plugin instance label desallocation */
-        printf("free plugin instance label\n");
         sfree(plugin_instance_label);
       }
 
@@ -244,7 +218,6 @@ json_object *write_json(metrics_list_t *metrics_list)
       json_object_object_add(plugin, plugin_label, plugin_with_instance);
 
       /* Plugin label desallocation */
-      printf("free plugin label\n");
       sfree(plugin_label);
     }
 
@@ -252,11 +225,8 @@ json_object *write_json(metrics_list_t *metrics_list)
     json_object_object_add(res, host_label, plugin);
 
     /* Host label desallocation */
-    printf("free host label\n");
     sfree(host_label);
-    printf("fin host\n");
   }
-
-  printf("fin while\n");
+  
   return res;
 }

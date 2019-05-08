@@ -269,6 +269,9 @@ int metrics_init(value_list_t const *list)
 
 int metrics_add(value_list_t const *list)
 {
+  /* Temporary metrics and value declaration, used to sort the metrics list */
+  value_list_t *metrics_tmp;
+
   /* Trivial case, the metrics list is NULL */
   if(!Metrics_list)
   {
@@ -305,6 +308,41 @@ int metrics_add(value_list_t const *list)
 
     /* Notify the structure we have add a new metrics */
     Metrics_list->size ++;
+
+    /* Now that the metrics has been added to the table, we have to sort the metrics list
+    according to their plugin instance, the json writing function need the metrics list to 
+    be sorted according to their plugin instance  */
+    for (int i = 0; i != Metrics_list->size; i++)
+    {
+      for (int j = 0; j != Metrics_list->size; j++)
+      {
+        if (strncmp(Metrics_list->metrics[i].plugin_instance,
+                    Metrics_list->metrics[j].plugin_instance,
+                    max_size(strlen(Metrics_list->metrics[i].plugin_instance), 
+                              strlen(Metrics_list->metrics[j].plugin_instance))) < 0)
+        {
+          /* Allocate the temporary metrics values */
+          metrics_tmp = (value_list_t *)malloc(sizeof(value_list_t));
+          if(!metrics_tmp)
+          {
+            metrics_deinit();
+            return -1;
+          }
+
+          /* Store the current metrics values */
+          memcpy(metrics_tmp, &Metrics_list->metrics[i], sizeof(value_list_t));
+
+          /* Replace the metrics content at index i */
+          memcpy(&Metrics_list->metrics[i], &Metrics_list->metrics[j], sizeof(value_list_t));
+
+          /* Replace the metrics content at index j */
+          memcpy(&Metrics_list->metrics[j], metrics_tmp, sizeof(value_list_t));
+
+          /* Free the temporary metrics value */
+          sfree(metrics_tmp);
+        }
+      }
+    }
   }
 
   return 0;
