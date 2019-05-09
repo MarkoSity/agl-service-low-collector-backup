@@ -25,8 +25,6 @@
 #include <time.h>
 #include "collectd_glue.h"
 
-char hostname[13] = "marco-laptop";
-
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             Plugin & Metrics
                                 variables
@@ -484,9 +482,11 @@ int plugin_dispatch_values(value_list_t const *vl)
   tmp_vl->values = (value_t *)malloc(sizeof(value_t));
   memcpy(tmp_vl->values, vl->values, sizeof(value_t));
 
-  /* If the hostname is not set yet */
-  if(!strncmp(tmp_vl->host, "", strlen(tmp_vl->host)))
-    strcpy(tmp_vl->host, hostname);
+  /* Set the actual hostname to the system username */
+  if(!getenv("USERNAME"))
+    strcpy(tmp_vl->host, "unknown");
+
+  strcpy(tmp_vl->host, getenv("USERNAME"));
 
   /* We want to add in our metrics list the argument vl */
   if(metrics_add(tmp_vl))
@@ -514,7 +514,13 @@ value_list_t *plugin_value_list_clone(value_list_t const *vl_orig)
   memcpy(vl, vl_orig, sizeof(*vl));
 
   if (vl->host[0] == 0)
-    sstrncpy(vl->host, hostname, sizeof(vl->host));
+  {
+    if(!getenv("USERNAME"))
+      sstrncpy(vl->host, "unknown", sizeof(vl->host));
+
+    else
+      sstrncpy(vl->host, getenv("USERNAME"), sizeof(vl->host));
+  }   
 
   vl->values = calloc(vl_orig->values_len, sizeof(*vl->values));
   if (vl->values == NULL)
