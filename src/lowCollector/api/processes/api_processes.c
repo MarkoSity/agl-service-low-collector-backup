@@ -259,10 +259,15 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
 {
   /* Variable definition */
   int plugin_index;
+  int config_number;
+  char *config_label;
+  json_object *current_config;
   json_type args_type;
   max_size_t Max_size;
   index_plugin_label_t Index_plugin_label;
   plugin_list_t **plugin_list;
+  oconfig_item_t *config;
+  int config_counter = 0;
 
   /* Ensure the processes library is open */
   if(!userdata->handle_processes)
@@ -287,6 +292,10 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
   if(!*plugin_list)
     return json_object_new_string(ERR_PLUGIN_NULL_CHAR);
 
+  current_config = json_object_new_object();
+  if(!current_config)
+    return json_object_new_string(ERR_ALLOC_CHAR);
+
   /* First, let's ensure the list has a processes plugin initialize */
   plugin_index = (*Index_plugin_label)(*plugin_list, PROCESSES_CHAR);
   if(plugin_index == -1)
@@ -294,32 +303,88 @@ json_object *api_processes_config(userdata_t *userdata, json_object *args)
 
   /* Retrieve the type of the configuration and ensure it's a good one */
   args_type = json_object_get_type(args);
-  if(args_type != json_type_string)
-    return json_object_new_string(ERR_ARG_CHAR);
+
+  switch(args_type)
+  {
+    case json_type_array:
+      config_number = json_object_array_length(args);
+      break;
+
+    case json_type_string:
+      config_number = 1;
+      break;
+
+    default:
+      return json_object_new_string(ERR_ARG_CHAR);
+  }
 
   /* Launch the processes init callack */
   if((*plugin_list)->plugin[plugin_index].init())
     return json_object_new_string(ERR_INIT_CHAR);
 
-  /* Context configuration case */
-  if(!strncmp(json_object_get_string(args), PROCESSES_CONTEXT_CHAR, (*Max_size)(strlen(PROCESSES_CONTEXT_CHAR), strlen(json_object_get_string(args)))))
-    return api_processes_config_context(userdata, plugin_index);
+  /* Allocate a configuration object and initialize it */
+  config = (oconfig_item_t *)malloc(sizeof(oconfig_item_t));
+  if(!config)
+    return json_object_new_string(ERR_ALLOC_CHAR);
 
-  /* File configuration case */
-  else if(!strncmp(json_object_get_string(args), PROCESSES_FILE_CHAR, (*Max_size)(strlen(PROCESSES_FILE_CHAR), strlen(json_object_get_string(args)))))
-    return api_processes_config_file(userdata, plugin_index);
+  /* Allocate the children config */
+  config->children_num = config_number;
+  config->children = (oconfig_item_t*)malloc(config->children_num*sizeof(oconfig_item_t));
+  if(!config->children)
+    return json_object_new_string(ERR_ALLOC_CHAR);
 
-  /* Memory configuration case */
-  else if(!strncmp(json_object_get_string(args), PROCESSES_MEMORY_CHAR, (*Max_size)(strlen(PROCESSES_MEMORY_CHAR), strlen(json_object_get_string(args)))))
-    return api_processes_config_memory(userdata, plugin_index);
+  /* Fill the children config with the json contained */
+  for(int i = 0 ; i != config_number ; i++)
+  {
+    /* Retrieve the current plugin */
+    if(args_type == json_type_array)
+      current_config = json_object_array_get_idx(args, i);
 
-  /* Test configuration case */
-  else if(!strncmp(json_object_get_string(args), "test", (*Max_size)(strlen("test"), strlen(json_object_get_string(args)))))
-    return api_processes_config_test(userdata, plugin_index);
+    else
+      current_config = args;
 
-  /* Unknown configuration */
-  else
-    return json_object_new_string(ERR_CONFIG_UNKNOWN_CHAR);
+    /* If the type ain't the one we expected we noticed it but we continue the process */
+    if(!json_object_is_type(current_config, json_type_string))
+      continue;
+
+    /* Retrieve the string in the current j-son object */
+    config_label = (char*)json_object_get_string(current_config);
+
+    /* Config children allocation */
+    config->children[i].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+    config->children[i].children_num = 3;
+    config->children[i].children = (oconfig_item_t*)malloc(config->children[i].children_num*sizeof(oconfig_item_t));
+    config->children[i].children[0].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+    config->children[i].children[1].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+    config->children[i].children[2].values = (oconfig_value_t *)malloc(sizeof(oconfig_value_t));
+
+    /* Now we can fill the children config fields */
+    config->children[i].key = "Process";
+    config->children[i].values_num = 1;
+    config->children[i].values->type = OCONFIG_TYPE_STRING;
+    config->children[i].values->value.string = config_label;
+
+    config->children[0].children[0].key = "CollectContextSwitch";
+    config->children[0].children[0].values_num = 1;
+    config->children[0].children[0].values->type = OCONFIG_TYPE_BOOLEAN;
+    config->children[0].children[0].values->value.boolean = true;
+
+    config->children[0].children[1].key = "CollectFileDescriptor";
+    config->children[0].children[1].values_num = 1;
+    config->children[0].children[1].values->type = OCONFIG_TYPE_BOOLEAN;
+    config->children[0].children[1].values->value.boolean = true;
+
+    config->children[0].children[2].key = "CollectMemoryMaps";
+    config->children[0].children[2].values_num = 1;
+    config->children[0].children[2].values->type = OCONFIG_TYPE_BOOLEAN;
+    config->children[0].children[2].values->value.boolean = true;
+
+    config_counter ++;
+  }
+  if(!config_counter)
+    return json_object_new_string(ERR_CONFIG_CHAR);
+
+  return json_object_new_string(SUCCESS_CONFIG_CHAR);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

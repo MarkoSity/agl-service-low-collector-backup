@@ -78,7 +78,7 @@ set (PKG_REQUIRED_LIST
 if(IS_DIRECTORY $ENV{HOME}/opt/afb-monitoring)
 set(MONITORING_ALIAS "--alias=/monitoring:$ENV{HOME}/opt/afb-monitoring")
 endif()
-set(CLOSING_MESSAGE "Debug from afb-daemon --port=${PORT}  --ldpaths=./src/lowCollector -v -t '' ")
+set(CLOSING_MESSAGE "Debug from afb-daemon --port=9999  --ldpaths=./src/lowCollector -v -t '' ")
 set(PACKAGE_MESSAGE "Install widget file using in the target : afm-util install ${PROJECT_NAME}.wgt")
 
 # Customize link option

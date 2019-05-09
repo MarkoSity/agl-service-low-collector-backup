@@ -59,18 +59,18 @@ json_object *write_json(metrics_list_t *metrics_list)
 
   int index = 0;
 
-  /* Variable allocation */
+  /* Json response allocation */
   res = json_object_new_object();
   if(!res)
-    return json_object_new_string(ERR_ALLOC_CHAR);
+    goto ERR_RES;
 
   /* Ensure the metrics list is not NULL */
   if(!metrics_list)
-    return json_object_new_string(ERR_METRICS_NULL_CHAR);
+    goto ERR_RES;
 
   /* Ensure the metrics list is not empty */
   if(!metrics_list->size)
-    return json_object_new_string(ERR_METRICS_EMPTY_CHAR);
+    goto ERR_RES;
 
   /* While index is not out of bond */
   while(index != metrics_list->size)
@@ -78,12 +78,12 @@ json_object *write_json(metrics_list_t *metrics_list)
     /* Retrieve and store the metrics host label */
     host_label = strdup(metrics_list->metrics[index].host);
     if(!host_label)
-      return json_object_new_string(ERR_ALLOC_CHAR);
+      goto ERR_RES;
 
     /* Json allocation */
     plugin = json_object_new_object();
     if(!plugin)
-      return json_object_new_string(ERR_ALLOC_CHAR);
+      goto ERR_PLUGIN;
 
     /* While the metrics host do not change */
     while(!strncmp(metrics_list->metrics[index].host, host_label,
@@ -92,16 +92,16 @@ json_object *write_json(metrics_list_t *metrics_list)
       /* Retrieve and store the metrics plugin */
       plugin_label = strdup(metrics_list->metrics[index].plugin);
       if(!plugin_label)
-        return json_object_new_string(ERR_ALLOC_CHAR);
+        goto ERR_PLUGIN_CHAR;
 
       /* Json allocation */
       plugin_without_instance = json_object_new_object();
       if(!plugin_without_instance)
-        return json_object_new_string(ERR_ALLOC_CHAR);
+        goto ERR_PLUGIN_WITHOUT_INSTANCE;
 
       plugin_with_instance = json_object_new_object();
       if(!plugin_with_instance)
-        return json_object_new_string(ERR_ALLOC_CHAR);
+        goto ERR_PLUGIN_WITH_INSTANCE;
 
       /* While the metrics plugin do not change */
       while(!strncmp(metrics_list->metrics[index].host, host_label,
@@ -112,12 +112,12 @@ json_object *write_json(metrics_list_t *metrics_list)
         /* Retrieve and store the metrics plugin instance label */
         plugin_instance_label = strdup(metrics_list->metrics[index].plugin_instance);
         if(!plugin_instance_label)
-          return json_object_new_string(ERR_ALLOC_CHAR);
+          goto ERR_PLUGIN_INSTANCE_CHAR;
 
         /* Json allocation */
         type = json_object_new_object();
         if(!type)
-          return json_object_new_string(ERR_ALLOC_CHAR);
+          goto ERR_TYPE;
 
         /* While the metrics plugin instance do not change */
         while(!strncmp(metrics_list->metrics[index].host, host_label,
@@ -130,12 +130,12 @@ json_object *write_json(metrics_list_t *metrics_list)
           /* Retrieve and store the metrics type */
           type_label = (char *) strdup(metrics_list->metrics[index].type);
           if(!type_label)
-            return json_object_new_string(ERR_ALLOC_CHAR);
+            goto ERR_TYPE_CHAR;
 
           /* Json allocation */
           type_instance = json_object_new_object();
           if(!type_instance)
-            return json_object_new_string(ERR_ALLOC_CHAR);
+            goto ERR_TYPE_INSTANCE;
 
           /* While the metrics type do not change */
           while(!strncmp(metrics_list->metrics[index].host, host_label,
@@ -150,12 +150,11 @@ json_object *write_json(metrics_list_t *metrics_list)
             /* Retrieve and store the metrics type instance*/
             type_instance_label = (char *)strdup(metrics_list->metrics[index].type_instance);
             if(!type_instance_label)
-              return json_object_new_string(ERR_ALLOC_CHAR);
-
+              goto ERR_VALUE_LIST_CHAR;
             /* Json allocation */
             value_list = json_object_new_array();
             if(!value_list)
-              return json_object_new_string(ERR_ALLOC_CHAR);
+              goto ERR_VALUE_LIST;
 
             /* While the type instance do not change */
             while(!strncmp(metrics_list->metrics[index].host, host_label,
@@ -174,6 +173,9 @@ json_object *write_json(metrics_list_t *metrics_list)
               {
                 /* Store the value in the value list */
                 value = json_object_new_double(metrics_list->metrics[index].values[i].gauge);
+                if(!value)
+                  goto ERR_VALUE;
+
                 json_object_array_add(value_list, value);
               }
 
@@ -186,14 +188,14 @@ json_object *write_json(metrics_list_t *metrics_list)
               json_object_object_add(type_instance, type_instance_label, value_list);
 
             else
-              json_object_object_add(type_instance, type_instance_label, value_list);
-              /* wrap_json_object_add(type_instance, value_list); */
+              json_object_object_add(type, type_label, value_list);
 
             /* Type instance label desallocation */
             sfree(type_instance_label);
           }
-
-          json_object_object_add(type, type_label, type_instance);
+          /* If the previous metrics values have a type instance not empty */
+            if(strncmp(metrics_list->metrics[index - 1].type_instance, "", strlen(metrics_list->metrics[index - 1].type_instance)))
+              json_object_object_add(type, type_label, type_instance);
 
           /* Type label desallocation */
           sfree(type_label);
@@ -227,6 +229,43 @@ json_object *write_json(metrics_list_t *metrics_list)
     /* Host label desallocation */
     sfree(host_label);
   }
-  
+
   return res;
+
+  /* Desallocation after a memory error has been detected */
+  ERR_VALUE:
+    json_object_put(value_list);
+
+  ERR_VALUE_LIST:
+    sfree(type_instance_label);
+
+  ERR_VALUE_LIST_CHAR:
+    json_object_put(type_instance);
+
+  ERR_TYPE_INSTANCE:
+    sfree(type_label);
+
+  ERR_TYPE_CHAR:
+    json_object_put(type);
+
+  ERR_TYPE:
+    sfree(plugin_instance_label);
+
+  ERR_PLUGIN_INSTANCE_CHAR:
+    json_object_put(plugin_with_instance);
+
+  ERR_PLUGIN_WITH_INSTANCE:
+    json_object_put(plugin_without_instance);
+
+  ERR_PLUGIN_WITHOUT_INSTANCE:
+    sfree(plugin_label);
+
+  ERR_PLUGIN_CHAR:
+    json_object_put(plugin);
+
+  ERR_PLUGIN:
+    sfree(host_label);
+
+  ERR_RES:
+    return json_object_new_string(ERR_ALLOC_CHAR);
 }
